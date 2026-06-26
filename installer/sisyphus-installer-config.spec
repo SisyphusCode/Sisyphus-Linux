@@ -3,7 +3,7 @@ Version:        1.0.0
 Release:        1%{?dist}
 Summary:        Calamares configuration and branding for Sisyphus Linux
 License:        GPLv3
-URL:            https://github.com/sisyphuscode/Sisyphus-Linux
+URL:            https://github.com/SisyphusCode/Sisyphus-Linux
 Source0:        %{name}-%{version}.tar.gz
 BuildArch:      noarch
 
@@ -14,7 +14,20 @@ Custom settings, branding, and module configurations for the Sisyphus Linux depl
 Includes systemd-free module execution paths and the official Sisyphus logo.
 
 %prep
-%autosetup -c
+# SRPM: extract Source0 tarball.
+# SCM mono-repo: copy installer/ from repo root or from spec directory.
+if [ -f %{SOURCE0} ]; then
+    %autosetup -c
+elif [ -d %{_sourcedir}/installer ]; then
+    mkdir -p %{_builddir}/%{name}-%{version}
+    cp -a %{_sourcedir}/installer %{_builddir}/%{name}-%{version}/
+elif [ -f %{_sourcedir}/settings.conf ]; then
+    mkdir -p %{_builddir}/%{name}-%{version}/installer
+    cp -a %{_sourcedir}/branding %{_sourcedir}/settings.conf %{_builddir}/%{name}-%{version}/installer/
+else
+    echo "ERROR: cannot locate installer sources under %{_sourcedir}" >&2
+    exit 1
+fi
 
 %build
 # Nothing to compile
