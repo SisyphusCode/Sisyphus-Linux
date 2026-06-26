@@ -1,0 +1,7 @@
+name = "udev-trigger"
+description = "Enumerate and add devices after udevd is up"
+command = "/usr/bin/udevadm"
+args = ["trigger", "--action=add"]
+after = ["udev"]
+type = "oneshot"
+restart = "no"

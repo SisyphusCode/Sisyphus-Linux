@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "forge-common",
+    "forge-core",
+    "forge-cli",
+    "forge-logind",
+]
+resolver = "2"

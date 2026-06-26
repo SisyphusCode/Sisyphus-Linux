@@ -1,0 +1,7 @@
+name = "user-sessions"
+description = "Allow user logins (handled natively in forge-core)"
+command = "/bin/true"
+args = []
+type = "oneshot"
+after = ["logind"]
+restart = "no"

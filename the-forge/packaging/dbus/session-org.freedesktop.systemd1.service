@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=org.freedesktop.systemd1
+Exec=/usr/libexec/forge/systemd1-session-stub-wrapper.sh

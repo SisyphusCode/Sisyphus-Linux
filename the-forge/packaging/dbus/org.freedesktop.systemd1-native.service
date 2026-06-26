@@ -1,0 +1,6 @@
+# Forge native mode — Rust forge-core registers org.freedesktop.systemd1 directly.
+# Prevent dbus-daemon from launching the Python activator stub.
+[D-BUS Service]
+Name=org.freedesktop.systemd1
+Exec=/bin/false
+User=root

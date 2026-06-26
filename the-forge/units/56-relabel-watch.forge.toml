@@ -1,0 +1,7 @@
+[service]
+name = "relabel-watch"
+# NM rewrites /etc/resolv.conf unlabeled after early restorecon — keep relabeling.
+exec = "/usr/libexec/forge/relabel-watch.sh"
+args = []
+after = ["forge-early", "NetworkManager"]
+restart = "no"

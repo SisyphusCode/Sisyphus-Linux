@@ -1,0 +1,7 @@
+#!/bin/sh
+# Close forge-logind session on logout.
+set -e
+UID="${PAM_USER:-$(id -u)}"
+if command -v forge-logind >/dev/null 2>&1; then
+  forge-logind close-session "$UID" || true
+fi

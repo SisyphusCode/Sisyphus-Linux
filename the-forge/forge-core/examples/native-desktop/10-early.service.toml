@@ -1,0 +1,8 @@
+name = "forge-early"
+description = "Early boot setup (Rust — no shell wrapper)"
+command = "/bin/true"
+args = []
+need = ["localmount", "devfs"]
+runlevels = ["boot", "sysinit", "multi-user", "graphical"]
+type = "oneshot"
+restart = "no"

@@ -1,0 +1,4 @@
+name = "graphical"
+description = "Graphical desktop target"
+requires = ["multi-user"]
+wants = ["accounts-daemon", "relabel-watch", "display-manager", "getty-tty3"]

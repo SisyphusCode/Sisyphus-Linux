@@ -1,0 +1,8 @@
+[service]
+name = "systemd1-stub"
+exec = "/usr/libexec/forge/systemd1-stub-wrapper.sh"
+args = []
+type = "dbus"
+bus-name = "org.freedesktop.systemd1"
+after = ["dbus"]
+restart = "on-failure"

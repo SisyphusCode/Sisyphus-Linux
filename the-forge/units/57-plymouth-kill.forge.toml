@@ -1,0 +1,8 @@
+# Plymouth teardown is handled natively by forge-core (plymouth::spawn_quit_worker).
+[service]
+name = "plymouth-kill"
+exec = "/bin/true"
+args = []
+type = "oneshot"
+after = ["forge-early"]
+restart = "no"

@@ -1,0 +1,19 @@
+[service]
+name = "forge-desktop"
+# Direct GNOME desktop — bypasses GDM greeter (see /etc/forge/desktop.toml).
+exec-start-pre = "/usr/libexec/forge/desktop-ready.sh"
+exec = "/usr/libexec/forge/start-forge-desktop.sh"
+args = []
+type = "simple"
+after = [
+    "multi-user",
+    "dbus",
+    "udev",
+    "udev-settle",
+    "logind",
+    "polkit",
+    "user-sessions",
+    "accounts-daemon",
+    "network-setup",
+]
+restart = "no"

@@ -1,0 +1,23 @@
+---
+componentName: Sisyphus Linux
+shortProductName: Sisyphus
+version: "0.1.0"
+shortVersion: "0.1.0"
+versioned: false
+slideshow: show.qml
+stylesheet: stylesheet.qss
+
+welcomeStyleCalamares: true
+welcomeExpandingLogo: true
+
+strings:
+    productName: Sisyphus Linux
+    shortProductName: Sisyphus
+    version: "0.1.0"
+    shortVersion: "0.1.0"
+    bootloaderEntryName: Sisyphus Linux
+    productUrl: https://github.com/SisyphusCode/the-forge
+    supportUrl: https://github.com/SisyphusCode/the-forge/issues
+    knownIssuesUrl: ""
+    releaseNotesUrl: ""
+    donateUrl: ""

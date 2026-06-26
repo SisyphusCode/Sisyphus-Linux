@@ -1,0 +1,9 @@
+# PAM session hook for The Forge logind
+# Install: cp forge /etc/pam.d/ && adjust login/sshd stacks:
+#   session optional pam_exec.so /usr/libexec/forge-session-open
+
+auth       optional   pam_env.so
+account    required   pam_unix.so
+session    optional   pam_exec.so expose_authtok /usr/libexec/forge-session-open
+session    optional   pam_exec.so /usr/libexec/forge-session-close
+password   required   pam_unix.so

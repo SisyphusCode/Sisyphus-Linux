@@ -1,0 +1,7 @@
+[mount]
+name = "run-forge"
+what = "tmpfs"
+where = "/tmp/forge/extra"
+fstype = "tmpfs"
+options = "mode=0755,size=8M"
+after = ["forge-early"]

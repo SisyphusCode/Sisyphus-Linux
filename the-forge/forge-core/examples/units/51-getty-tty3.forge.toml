@@ -1,0 +1,7 @@
+[service]
+name = "getty-tty3"
+# Emergency text console on tty3 — GDM greeter uses DefaultVT=1 (tty1).
+exec = "/usr/libexec/forge/start-agetty.sh"
+args = ["--noreset", "--noclear", "tty3", "linux"]
+after = ["forge-early", "dbus", "udev", "udev-trigger", "udev-settle", "forge-desktop"]
+restart = "on-failure"

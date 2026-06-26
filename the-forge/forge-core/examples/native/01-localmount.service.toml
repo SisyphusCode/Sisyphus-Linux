@@ -1,0 +1,6 @@
+name = "localmount"
+description = "Local filesystem mounts"
+command = "/usr/bin/mount"
+args = ["-a", "-t", "nonetwork"]
+need = ["devfs"]
+runlevels = ["boot", "sysinit"]

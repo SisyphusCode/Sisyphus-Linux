@@ -1,0 +1,6 @@
+[service]
+name = "dev-trigger"
+exec = "/bin/true"
+args = []
+after = ["forge-early"]
+restart = "no"

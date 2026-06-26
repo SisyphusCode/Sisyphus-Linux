@@ -1,0 +1,12 @@
+[Unit]
+Description=Notify demo (systemd Type=notify)
+After=forge-early.service
+
+[Service]
+Type=notify
+ExecStart=/bin/sh -c 'printf READY=1 | nc -U -w1 -u "$NOTIFY_SOCKET"; sleep 3600'
+Environment=DEMO=systemd-notify
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

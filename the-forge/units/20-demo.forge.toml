@@ -1,0 +1,6 @@
+[service]
+name = "forge-demo"
+exec = "/bin/sh"
+args = ["-c", "echo forge-demo online; sleep 1"]
+after = ["forge-early"]
+restart = "on-failure"

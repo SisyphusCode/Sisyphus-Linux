@@ -1,0 +1,6 @@
+name = "getty-tty3"
+description = "Emergency text console on tty3"
+command = "/usr/libexec/forge/start-agetty.sh"
+args = ["--noreset", "--noclear", "tty3", "linux"]
+after = ["forge-early", "dbus", "udev", "udev-trigger", "udev-settle", "forge-desktop"]
+restart = "on-failure"

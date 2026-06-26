@@ -1,0 +1,5 @@
+# Forge PID 1 override — stock file uses Exec=/bin/false when systemd is not PID 1.
+[D-BUS Service]
+Name=org.freedesktop.systemd1
+Exec=/usr/libexec/forge/systemd1-stub-activate.sh
+User=root

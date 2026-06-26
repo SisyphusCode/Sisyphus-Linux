@@ -1,0 +1,14 @@
+[service]
+name = "dbus"
+# Socket-activated like systemd's dbus.socket → dbus.service (LISTEN_FDS for broker/daemon).
+exec = "/usr/bin/dbus-daemon"
+args = []
+type = "dbus"
+bus-name = "org.freedesktop.DBus"
+requires = ["dbus.socket"]
+sockets = ["dbus.socket"]
+after = ["forge-early", "dbus.socket"]
+restart = "on-failure"
+
+[service.environment]
+DBUS_SYSTEM_BUS_ADDRESS = "unix:path=/run/dbus/system_bus_socket"

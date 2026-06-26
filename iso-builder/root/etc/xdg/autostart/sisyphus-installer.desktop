@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Install Sisyphus Linux
+Comment=Start the Sisyphus Linux installer on live media
+Icon=calamares
+Exec=/usr/libexec/sisyphus/launch-calamares.sh
+Terminal=false
+X-GNOME-Autostart-enabled=true
+OnlyShowIn=COSMIC;GNOME;KDE;
+X-KDE-autostart-after=panel

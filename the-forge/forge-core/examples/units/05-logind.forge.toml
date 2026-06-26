@@ -1,0 +1,16 @@
+[service]
+name = "logind"
+exec = "/usr/libexec/forge/start-logind.sh"
+args = []
+type = "notify-reload"
+bus-name = "org.freedesktop.login1"
+requires = ["systemd1-stub"]
+after = ["forge-early", "dbus", "systemd1-stub", "udev"]
+restart = "on-failure"
+# Wrapper auto-detects /usr/libexec/elogind/elogind or /usr/lib/systemd/systemd-logind etc.
+# See also native-desktop equivalent for direct binary option.
+
+[service.sandbox]
+private-tmp = true
+protect-system = true
+no-new-privileges = true

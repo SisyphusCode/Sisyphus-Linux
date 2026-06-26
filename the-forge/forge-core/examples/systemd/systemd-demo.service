@@ -1,0 +1,14 @@
+[Unit]
+Description=Forge demo service (systemd format)
+After=forge-early.service
+Wants=forge-early.service
+
+[Service]
+Type=simple
+ExecStart=/bin/sh -c "echo systemd-import-demo; sleep 1"
+Restart=on-failure
+MemoryMax=128M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

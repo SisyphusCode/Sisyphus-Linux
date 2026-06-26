@@ -1,0 +1,10 @@
+[service]
+name = "notify-demo"
+exec = "/bin/sh"
+args = ["-c", "printf READY=1 | nc -U -w1 -u \"$NOTIFY_SOCKET\"; sleep 3600"]
+after = ["forge-early"]
+type = "notify"
+restart = "on-failure"
+
+[service.environment]
+DEMO = "notify"

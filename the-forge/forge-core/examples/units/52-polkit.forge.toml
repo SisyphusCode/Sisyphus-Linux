@@ -1,0 +1,8 @@
+[service]
+name = "polkit"
+exec = "/usr/libexec/forge/start-polkit.sh"
+args = []
+type = "dbus"
+bus-name = "org.freedesktop.PolicyKit1"
+after = ["dbus"]
+restart = "always"

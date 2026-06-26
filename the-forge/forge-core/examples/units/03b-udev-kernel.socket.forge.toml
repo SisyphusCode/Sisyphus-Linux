@@ -1,0 +1,5 @@
+[socket]
+name = "udev-kernel.socket"
+listen = ["netlink:kobject-uevent:1"]
+service = "udev"
+after = ["forge-early"]

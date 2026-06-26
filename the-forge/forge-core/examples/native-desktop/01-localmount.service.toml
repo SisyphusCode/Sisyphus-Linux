@@ -1,0 +1,7 @@
+name = "localmount"
+description = "Mount local filesystems from fstab"
+command = "/usr/bin/mount"
+args = ["-a", "-t", "nonetwork"]
+need = ["devfs"]
+type = "oneshot"
+restart = "no"

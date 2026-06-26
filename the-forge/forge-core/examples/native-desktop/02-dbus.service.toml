@@ -1,0 +1,14 @@
+name = "dbus"
+description = "D-Bus system message bus"
+command = "/usr/bin/dbus-daemon"
+args = []
+type = "dbus"
+bus-name = "org.freedesktop.DBus"
+need = ["dbus.socket"]
+sockets = ["dbus.socket"]
+after = ["forge-early", "dbus.socket"]
+runlevels = ["multi-user", "graphical"]
+restart = "on-failure"
+
+[environment]
+DBUS_SYSTEM_BUS_ADDRESS = "unix:path=/run/dbus/system_bus_socket"

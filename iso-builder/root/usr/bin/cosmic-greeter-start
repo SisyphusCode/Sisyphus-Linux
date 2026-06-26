@@ -1,0 +1,17 @@
+#!/usr/bin/sh
+# Forge overlay — log greeter session output (stock script silences errors).
+LOG=/run/cosmic-greeter/cosmic-greeter-session.log
+mkdir -p /run/cosmic-greeter
+exec >>"$LOG" 2>&1
+echo "=== $(date -Is 2>/dev/null || date) cosmic-greeter-start uid=$(id -u) ==="
+rm -rf /run/cosmic-greeter/cosmic/com.system76.CosmicSettingsDaemon/v1/* 2>/dev/null
+uid=$(id -u)
+export XDG_RUNTIME_DIR="/run/user/${uid}"
+mkdir -p "$XDG_RUNTIME_DIR"
+chmod 0700 "$XDG_RUNTIME_DIR" 2>/dev/null || true
+export XDG_SESSION_TYPE=wayland
+export XDG_SESSION_CLASS=greeter
+export XDG_CURRENT_DESKTOP=COSMIC
+export XDG_SEAT=seat0
+export GDK_BACKEND=wayland
+exec cosmic-comp cosmic-greeter

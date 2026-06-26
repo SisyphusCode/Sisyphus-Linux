@@ -1,0 +1,13 @@
+[service]
+name = "network-setup"
+# CIQ RLC Pro 10.2: Wi-Fi (wlp82s0) is not ready during forge-core's synchronous
+# network.toml phase. This oneshot waits for the iface, then uses NetworkManager.
+exec = "/usr/libexec/forge/setup-net.sh"
+args = []
+after = ["dbus", "udev", "udev-settle", "NetworkManager"]
+# Exits immediately; Wi-Fi continues in background (see setup-net.sh).
+type = "oneshot"
+restart = "no"
+
+[service.environment]
+FORGE_NET_IFACE = "wlp82s0"

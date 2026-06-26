@@ -1,0 +1,6 @@
+name = "devfs"
+description = "Device filesystem (devtmpfs mounted by forge-core VFS)"
+command = "/bin/true"
+args = []
+type = "oneshot"
+restart = "no"

@@ -1,0 +1,8 @@
+[service]
+name = "accounts-daemon"
+exec = "/usr/libexec/forge/start-accounts-daemon.sh"
+args = []
+type = "dbus"
+bus-name = "org.freedesktop.Accounts"
+after = ["dbus", "polkit"]
+restart = "on-failure"

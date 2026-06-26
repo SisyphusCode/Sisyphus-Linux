@@ -1,0 +1,33 @@
+---
+componentName:  sisyphus
+windowExpanding: normal
+windowSize: 800px,520px
+windowPlacement: center
+
+strings:
+    productName:         Sisyphus Linux
+    shortProductName:    Sisyphus
+    version:             0.1.0
+    shortVersion:        0.1
+    versionedName:       Sisyphus Linux 0.1.0
+    shortVersionedName:  Sisyphus 0.1
+    bootloaderEntryName: Sisyphus
+    productUrl:          https://github.com/sisyphuscode/Sisyphus-Linux
+    supportUrl:          https://github.com/sisyphuscode/Sisyphus-Linux/issues
+    knownIssuesUrl:      ""
+    releaseNotesUrl:     ""
+    donateUrl:           ""
+
+images:
+    productLogo:         "logo.png"
+    productIcon:         "logo.png"
+    productWelcome:      "logo.png"
+
+style:
+    SidebarBackground:          "#1e1e1e"
+    SidebarText:                "#ffffff"
+    SidebarTextCurrent:         "#ffffff"
+    SidebarBackgroundCurrent:   "#333333"
+
+welcomeStyleCalamares: true
+welcomeExpandingLogo: true

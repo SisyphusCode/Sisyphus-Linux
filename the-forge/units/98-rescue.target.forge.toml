@@ -1,0 +1,5 @@
+[target]
+name = "rescue"
+# Last-resort target when graphical/multi-user fail. Keeps a login prompt alive.
+requires = ["forge-early"]
+wants = ["dbus", "getty-tty3", "getty-console"]

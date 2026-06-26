@@ -1,0 +1,10 @@
+# Early Forge network (runs synchronously in forge-core before unit waves).
+#
+# CIQ RLC Pro 10.2 ThinkPads use Wi-Fi (wlp82s0) which is not present at PID 1
+# early boot. Leave this empty and use the network-setup + NetworkManager units
+# instead (see 06-network-setup.forge.toml and 07-network-manager.forge.toml).
+#
+# Wired-only systems can uncomment:
+# [[interface]]
+# ifname = "eno1"
+# dhcp = true

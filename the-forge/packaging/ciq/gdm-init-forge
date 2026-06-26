@@ -1,0 +1,6 @@
+#!/usr/bin/sh
+# GDM Init hook — NVIDIA Wayland env for greeter children (runs in greeter display context).
+export WLR_NO_HARDWARE_CURSORS=1
+export __GLX_VENDOR_LIBRARY_NAME=nvidia
+export GBM_BACKEND=nvidia-drm
+exit 0

@@ -1,0 +1,7 @@
+name = "plymouth-kill"
+description = "Plymouth teardown (also handled natively by forge-core)"
+command = "/bin/true"
+args = []
+type = "oneshot"
+after = ["forge-early"]
+restart = "no"

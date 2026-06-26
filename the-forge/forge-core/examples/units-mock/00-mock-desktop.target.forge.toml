@@ -1,0 +1,5 @@
+[target]
+name = "mock-desktop"
+# Minimal self-contained mock target for ns testing (only loads units present in units-mock + systemd examples)
+requires = ["forge-early"]
+wants = ["systemd1-stub"]

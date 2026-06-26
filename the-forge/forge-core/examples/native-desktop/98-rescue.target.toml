@@ -1,0 +1,4 @@
+name = "rescue"
+description = "Last-resort target when graphical/multi-user fail"
+requires = ["forge-early"]
+wants = ["dbus", "getty-tty3", "getty-console"]

@@ -1,0 +1,13 @@
+name = "udev"
+description = "Device manager"
+command = "/usr/libexec/forge/start-udevd.sh"
+args = []
+type = "notify-reload"
+need = ["udev-control.socket", "udev-kernel.socket"]
+sockets = ["udev-control.socket", "udev-kernel.socket"]
+after = ["forge-early", "dbus", "udev-control.socket", "udev-kernel.socket"]
+restart = "on-failure"
+
+[sandbox]
+private-devices = true
+no-new-privileges = true

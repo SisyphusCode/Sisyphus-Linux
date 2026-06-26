@@ -1,0 +1,4 @@
+name = "udev-control.socket"
+listen = ["seqpacket:/run/udev/control"]
+service = "udev"
+after = ["forge-early", "dbus"]

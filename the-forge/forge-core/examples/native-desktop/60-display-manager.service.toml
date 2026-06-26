@@ -1,0 +1,19 @@
+name = "display-manager"
+description = "GDM display manager"
+exec-start-pre = "/usr/libexec/forge/desktop-ready.sh"
+command = "/usr/libexec/forge/start-gdm.sh"
+args = []
+type = "dbus"
+bus-name = "org.gnome.DisplayManager"
+after = [
+    "multi-user",
+    "dbus",
+    "udev",
+    "udev-settle",
+    "logind",
+    "polkit",
+    "user-sessions",
+    "accounts-daemon",
+    "network-setup",
+]
+restart = "on-failure"

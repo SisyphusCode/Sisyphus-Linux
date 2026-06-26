@@ -1,0 +1,13 @@
+[service]
+name = "udev"
+exec = "/usr/libexec/forge/start-udevd.sh"
+args = []
+type = "notify-reload"
+requires = ["udev-control.socket", "udev-kernel.socket"]
+sockets = ["udev-control.socket", "udev-kernel.socket"]
+after = ["forge-early", "dbus", "udev-control.socket", "udev-kernel.socket"]
+restart = "on-failure"
+
+[service.sandbox]
+private-devices = true
+no-new-privileges = true

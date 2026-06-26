@@ -1,0 +1,8 @@
+name = "polkit"
+description = "PolicyKit authorization manager"
+command = "/usr/libexec/forge/start-polkit.sh"
+args = []
+type = "dbus"
+bus-name = "org.freedesktop.PolicyKit1"
+after = ["dbus"]
+restart = "always"

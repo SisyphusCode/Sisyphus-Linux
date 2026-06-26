@@ -1,0 +1,7 @@
+name = "udev-settle"
+description = "Wait for udev queue to empty"
+command = "/usr/bin/udevadm"
+args = ["settle", "--timeout=30"]
+after = ["udev-trigger"]
+type = "oneshot"
+restart = "no"

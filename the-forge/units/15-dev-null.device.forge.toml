@@ -1,0 +1,5 @@
+[device]
+name = "dev-null"
+path = "/dev/null"
+service = "dev-trigger"
+after = ["forge-early"]

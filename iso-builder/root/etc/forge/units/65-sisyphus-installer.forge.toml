@@ -1,0 +1,8 @@
+[service]
+name = "sisyphus-installer"
+description = "Sisyphus live installer (Calamares)"
+exec = "/usr/libexec/sisyphus/wait-and-launch-calamares.sh"
+args = []
+type = "simple"
+after = ["display-manager"]
+restart = "on-failure"

@@ -1,0 +1,13 @@
+[package]
+name = "forge-cli"
+version = "0.1.0"
+edition = "2021"
+description = "forgectl — control plane for The Forge init system"
+
+[[bin]]
+name = "forgectl"
+path = "src/main.rs"
+
+[dependencies]
+forge-common = { path = "../forge-common" }
+serde_json = "1"

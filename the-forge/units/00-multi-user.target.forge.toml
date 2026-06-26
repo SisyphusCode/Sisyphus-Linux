@@ -1,0 +1,13 @@
+[target]
+name = "multi-user"
+# CIQ RLC Pro 10.2 production boot graph (Rocky Linux + GNOME).
+requires = ["forge-early", "dbus", "polkit", "udev", "logind"]
+wants = [
+    "plymouth-kill",
+    "udev-trigger",
+    "udev-settle",
+    "NetworkManager",
+    "network-setup",
+    "user-sessions",
+    "getty-console",
+]

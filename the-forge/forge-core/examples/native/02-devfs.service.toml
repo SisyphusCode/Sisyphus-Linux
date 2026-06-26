@@ -1,0 +1,5 @@
+name = "devfs"
+description = "Device filesystem setup"
+command = "/usr/bin/mount"
+args = ["-t", "devtmpfs", "devtmpfs", "/dev"]
+runlevels = ["boot"]

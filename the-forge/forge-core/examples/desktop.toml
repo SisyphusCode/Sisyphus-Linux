@@ -1,0 +1,5 @@
+# Forge direct desktop (no GDM greeter).
+# Install: /etc/forge/desktop.toml
+
+user = "Sisyphus"
+vt = 1

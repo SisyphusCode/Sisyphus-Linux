@@ -1,0 +1,20 @@
+[service]
+name = "display-manager"
+# CIQ RLC Pro / Rocky GNOME — gdm is typically /usr/sbin/gdm (not /usr/bin/gdm).
+exec-start-pre = "/usr/libexec/forge/desktop-ready.sh"
+exec = "/usr/libexec/forge/start-gdm.sh"
+args = []
+type = "dbus"
+bus-name = "org.gnome.DisplayManager"
+after = [
+    "multi-user",
+    "dbus",
+    "udev",
+    "udev-settle",
+    "logind",
+    "polkit",
+    "user-sessions",
+    "accounts-daemon",
+    "network-setup",
+]
+restart = "on-failure"

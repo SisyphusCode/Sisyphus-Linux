@@ -1,0 +1,13 @@
+[service]
+name = "dbus"
+# Standalone bus via start-dbus.sh — dbus.socket pre-binding breaks dbus-daemon on Forge.
+exec-start-pre = "/usr/libexec/forge/init-machine-id.sh"
+exec = "/usr/libexec/forge/start-dbus.sh"
+args = []
+type = "dbus"
+bus-name = "org.freedesktop.DBus"
+after = ["forge-early"]
+restart = "on-failure"
+
+[service.environment]
+DBUS_SYSTEM_BUS_ADDRESS = "unix:path=/run/dbus/system_bus_socket"

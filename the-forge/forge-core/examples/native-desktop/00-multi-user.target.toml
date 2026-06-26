@@ -1,0 +1,12 @@
+name = "multi-user"
+description = "Multi-user target (CIQ RLC Pro production boot graph)"
+requires = ["sysinit", "forge-early", "dbus", "polkit", "udev", "logind"]
+wants = [
+    "plymouth-kill",
+    "udev-trigger",
+    "udev-settle",
+    "NetworkManager",
+    "network-setup",
+    "user-sessions",
+    "getty-console",
+]

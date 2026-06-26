@@ -1,0 +1,19 @@
+[service]
+name = "display-manager"
+description = "COSMIC greeter display manager"
+exec-start-pre = "/usr/libexec/forge/desktop-ready.sh"
+exec = "/usr/libexec/forge/start-cosmic-greeter.sh"
+args = []
+type = "simple"
+after = [
+    "multi-user",
+    "dbus",
+    "udev",
+    "udev-settle",
+    "logind",
+    "polkit",
+    "user-sessions",
+    "accounts-daemon",
+    "network-setup",
+]
+restart = "on-failure"

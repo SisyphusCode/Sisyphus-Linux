@@ -1,0 +1,10 @@
+#!/bin/sh
+# Open a forge-logind session on login (PAM session hook).
+set -e
+UID="${PAM_USER:-$(id -u)}"
+RUNTIME="/run/user/${UID}"
+mkdir -p "$RUNTIME"
+export XDG_RUNTIME_DIR="$RUNTIME"
+if command -v forge-logind >/dev/null 2>&1; then
+  forge-logind open-session "$UID" "${PAM_USER:-root}" "${PAM_SERVICE:-login}" || true
+fi

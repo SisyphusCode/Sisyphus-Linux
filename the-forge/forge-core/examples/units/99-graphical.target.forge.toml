@@ -1,0 +1,16 @@
+[target]
+name = "graphical"
+requires = ["multi-user"]
+wants = ["accounts-daemon", "relabel-watch", "display-manager", "getty-tty3"]
+
+# Desktop target. forge-desktop auto-logs in (no GDM). Emergency console: getty-tty3.
+#
+# Requires a real display manager + all its dependencies (dbus, udev, logind,
+# graphics drivers, fonts, etc.) to be present in the root filesystem.
+#
+# Usage:
+#   echo "graphical" > /etc/forge/default.target
+#   # or
+#   FORGE_TARGET=graphical /usr/sbin/forge-core
+
+# To use GDM instead: wants display-manager and remove forge-desktop from wants.

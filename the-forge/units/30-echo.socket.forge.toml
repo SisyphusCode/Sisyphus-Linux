@@ -1,0 +1,5 @@
+[socket]
+name = "echo-server.socket"
+listen = ["/tmp/forge/echo.sock"]
+service = "echo-server"
+after = ["forge-early"]

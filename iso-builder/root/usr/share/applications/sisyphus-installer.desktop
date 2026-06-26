@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Install Sisyphus Linux
+Comment=Install Sisyphus Linux to this computer
+Icon=calamares
+Exec=/usr/libexec/sisyphus/launch-calamares.sh
+Terminal=false
+Categories=System;Settings;
+Keywords=install;calamares;sisyphus;
+NoDisplay=false

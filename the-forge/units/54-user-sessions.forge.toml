@@ -1,0 +1,8 @@
+[service]
+name = "user-sessions"
+# Native handler in forge-core start_service (user_sessions::allow_logins).
+exec = "/bin/true"
+args = []
+type = "oneshot"
+after = ["logind"]
+restart = "no"

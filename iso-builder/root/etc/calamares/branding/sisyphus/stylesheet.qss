@@ -1,0 +1,16 @@
+/* Sisyphus Linux installer branding */
+QWidget {
+    font-family: "Open Sans", "Noto Sans", sans-serif;
+}
+QLabel#sidebarAppName {
+    font-size: 18pt;
+    font-weight: bold;
+}
+QProgressBar {
+    border: 1px solid #3d3d3d;
+    border-radius: 4px;
+    text-align: center;
+}
+QProgressBar::chunk {
+    background-color: #3584e4;
+}

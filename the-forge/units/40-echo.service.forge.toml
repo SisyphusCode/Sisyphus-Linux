@@ -1,0 +1,7 @@
+[service]
+name = "echo-server"
+exec = "/bin/cat"
+args = []
+after = ["forge-early"]
+sockets = ["echo-server.socket"]
+restart = "on-failure"

@@ -1,0 +1,2 @@
+# pam-forge-login-session: runtime dir + SELinux labels before pam_selinux open.
+session    optional    pam_exec.so /usr/libexec/forge/pam-forge-login-session.sh

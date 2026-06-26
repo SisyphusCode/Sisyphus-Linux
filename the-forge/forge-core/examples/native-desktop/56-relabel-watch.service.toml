@@ -1,0 +1,6 @@
+name = "relabel-watch"
+description = "Keep SELinux labels on resolv.conf after NetworkManager"
+command = "/usr/libexec/forge/relabel-watch.sh"
+args = []
+after = ["forge-early", "NetworkManager"]
+restart = "no"

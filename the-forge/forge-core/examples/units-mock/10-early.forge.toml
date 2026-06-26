@@ -1,0 +1,6 @@
+[service]
+name = "forge-early"
+exec = "/usr/libexec/forge/forge-early-mock.sh"
+args = []
+type = "oneshot"
+restart = "no"
