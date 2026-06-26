@@ -61,7 +61,6 @@ if copr-cli list-packages "${OWNER}/${PROJECT}" --output-format json \
         --commit "${COMMITTISH}" \
         --spec "${SPEC}" \
         --method make_srpm \
-        --subdir installer \
         --webhook-rebuild on
 else
     echo "==> Adding SCM package ${PACKAGE}..."
@@ -71,7 +70,6 @@ else
         --commit "${COMMITTISH}" \
         --spec "${SPEC}" \
         --method make_srpm \
-        --subdir installer \
         --webhook-rebuild on
 fi
 
@@ -81,7 +79,6 @@ BUILD_OUT="$(copr-cli buildscm "${OWNER}/${PROJECT}" \
     --commit "${COMMITTISH}" \
     --spec "${SPEC}" \
     --method make_srpm \
-    --subdir installer \
     "${CHROOT_ARGS[@]}" \
     --nowait 2>&1)" || true
 echo "${BUILD_OUT}"
