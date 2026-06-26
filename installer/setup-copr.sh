@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OWNER="${COPR_OWNER:-sisyphuscode}"
 PROJECT="sisyphus-linux"
 PACKAGE="sisyphus-installer-config"
-CLONE_URL="${COPR_CLONE_URL:-https://github.com/sisyphuscode/Sisyphus-Linux.git}"
+CLONE_URL="${COPR_CLONE_URL:-https://github.com/SisyphusCode/Sisyphus-Linux.git}"
 SPEC="installer/sisyphus-installer-config.spec"
 COMMITTISH="${COPR_COMMIT:-main}"
 
@@ -60,7 +60,8 @@ if copr-cli list-packages "${OWNER}/${PROJECT}" --output-format json \
         --clone-url "${CLONE_URL}" \
         --commit "${COMMITTISH}" \
         --spec "${SPEC}" \
-        --method rpkg \
+        --method make_srpm \
+        --subdir installer \
         --webhook-rebuild on
 else
     echo "==> Adding SCM package ${PACKAGE}..."
@@ -69,7 +70,8 @@ else
         --clone-url "${CLONE_URL}" \
         --commit "${COMMITTISH}" \
         --spec "${SPEC}" \
-        --method rpkg \
+        --method make_srpm \
+        --subdir installer \
         --webhook-rebuild on
 fi
 
@@ -78,7 +80,8 @@ BUILD_OUT="$(copr-cli buildscm "${OWNER}/${PROJECT}" \
     --clone-url "${CLONE_URL}" \
     --commit "${COMMITTISH}" \
     --spec "${SPEC}" \
-    --method rpkg \
+    --method make_srpm \
+    --subdir installer \
     "${CHROOT_ARGS[@]}" \
     --nowait 2>&1)" || true
 echo "${BUILD_OUT}"

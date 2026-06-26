@@ -12,8 +12,8 @@ strings:
     versionedName:       Sisyphus Linux 0.1.0
     shortVersionedName:  Sisyphus 0.1
     bootloaderEntryName: Sisyphus
-    productUrl:          https://github.com/sisyphuscode/Sisyphus-Linux
-    supportUrl:          https://github.com/sisyphuscode/Sisyphus-Linux/issues
+    productUrl:          https://github.com/SisyphusCode/Sisyphus-Linux
+    supportUrl:          https://github.com/SisyphusCode/Sisyphus-Linux/issues
     knownIssuesUrl:      ""
     releaseNotesUrl:     ""
     donateUrl:           ""
