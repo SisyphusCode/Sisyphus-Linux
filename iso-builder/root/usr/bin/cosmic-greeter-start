@@ -41,13 +41,13 @@ if [[ -z "${WLR_DRM_DEVICES:-}" ]]; then
     if [[ "$(cat "$entry/status" 2>/dev/null)" == "connected" ]]; then
       idx="${entry#/sys/class/drm/card}"
       idx="${idx%%-*}"
-      export WLR_DRM_DEVICES="card${idx}"
+      export WLR_DRM_DEVICES="/dev/dri/card${idx}"
       break
     fi
   done
 fi
 
-export WLR_DRM_DEVICES="${WLR_DRM_DEVICES:-card0}"
+export WLR_DRM_DEVICES="${WLR_DRM_DEVICES:-/dev/dri/card0}"
 export WLR_NO_HARDWARE_CURSORS="${WLR_NO_HARDWARE_CURSORS:-1}"
 echo "cosmic-greeter-start: WLR_DRM_DEVICES=${WLR_DRM_DEVICES} LIBSEAT_BACKEND=${LIBSEAT_BACKEND}"
 

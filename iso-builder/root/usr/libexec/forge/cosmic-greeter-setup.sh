@@ -40,24 +40,24 @@ pick_drm_cards() {
       driver="$(grep -E '^DRIVER=' "/sys/class/drm/card${idx}/device/uevent" 2>/dev/null | cut -d= -f2 || true)"
     fi
     if [[ "$(cat "$entry/status" 2>/dev/null)" == "connected" ]]; then
-      connected+=("card${idx}")
+      connected+=("/dev/dri/card${idx}")
     elif [[ "$driver" == "i915" || "$driver" == "amdgpu" || "$driver" == "xe" ]]; then
-      fallback+=("card${idx}")
+      fallback+=("/dev/dri/card${idx}")
     fi
   done
 
   if [[ ${#connected[@]} -gt 0 ]]; then
-    printf '%s\n' "${connected[@]}" | awk '!seen[$0]++' | paste -sd, -
+    printf '%s\n' "${connected[@]}" | awk '!seen[$0]++' | paste -sd: -
     return 0
   fi
   if [[ ${#fallback[@]} -gt 0 ]]; then
-    printf '%s\n' "${fallback[@]}" | awk '!seen[$0]++' | paste -sd, -
+    printf '%s\n' "${fallback[@]}" | awk '!seen[$0]++' | paste -sd: -
     return 0
   fi
   for card in /dev/dri/card[0-9]*; do
     [[ -c "$card" ]] || continue
-    basename "$card"
-  done | paste -sd, -
+    echo "$card"
+  done | paste -sd: -
 }
 
 DRM_DEVICES="$(pick_drm_cards || true)"
