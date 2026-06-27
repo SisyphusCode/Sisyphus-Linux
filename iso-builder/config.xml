@@ -105,6 +105,7 @@
         <package name="NetworkManager-bluetooth"/>
         <package name="wpa_supplicant"/>
         <package name="bind-utils"/>
+        <package name="nbd"/>
         <package name="iproute"/>
         <package name="iptables-nft"/>
 

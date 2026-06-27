@@ -30,7 +30,7 @@ cargo build --locked --release --workspace
 install -d %{buildroot}%{_sbindir} %{buildroot}%{_bindir} %{buildroot}%{_libexecdir}
 install -d %{buildroot}%{_sysconfdir}/pam.d
 install -d %{buildroot}%{_sysconfdir}/forge/{units,systemd,backup}
-install -d %{buildroot}%{_libdir}/dracut/modules.d/90forge
+install -d %{buildroot}%{_prefix}/lib/dracut/modules.d/90forge
 install -d %{buildroot}%{_datadir}/forge/dbus-overrides
 install -d %{buildroot}%{_datadir}/forge
 install -d %{buildroot}%{_libexecdir}/forge
@@ -61,8 +61,8 @@ install -m 0644 forge-core/examples/network.toml %{buildroot}%{_sysconfdir}/forg
 install -m 0644 forge-core/examples/desktop.toml %{buildroot}%{_sysconfdir}/forge/desktop.toml
 cp -a forge-core/examples/units/. %{buildroot}%{_sysconfdir}/forge/units/
 cp -a forge-core/examples/systemd/. %{buildroot}%{_sysconfdir}/forge/systemd/
-install -m 0755 packaging/dracut/90forge/module-setup.sh %{buildroot}%{_libdir}/dracut/modules.d/90forge/
-install -m 0755 packaging/dracut/90forge/forge-cmdline.sh %{buildroot}%{_libdir}/dracut/modules.d/90forge/
+install -m 0755 packaging/dracut/90forge/module-setup.sh %{buildroot}%{_prefix}/lib/dracut/modules.d/90forge/
+install -m 0755 packaging/dracut/90forge/forge-cmdline.sh %{buildroot}%{_prefix}/lib/dracut/modules.d/90forge/
 
 %files
 %doc README.md NATIVE_MODE.md
@@ -85,7 +85,7 @@ install -m 0755 packaging/dracut/90forge/forge-cmdline.sh %{buildroot}%{_libdir}
 %{_sysconfdir}/forge/systemd/*
 %{_datadir}/forge/login-forge-snippet
 %{_datadir}/forge/dbus-overrides/*
-%{_libdir}/dracut/modules.d/90forge/*
+%{_prefix}/lib/dracut/modules.d/90forge/*
 
 %post
 install -d %{_sysconfdir}/dbus-1/system-services 2>/dev/null || true

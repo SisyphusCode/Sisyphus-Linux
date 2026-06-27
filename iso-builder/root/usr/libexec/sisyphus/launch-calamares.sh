@@ -9,35 +9,83 @@ if [[ ! -f /etc/sisyphus/installer-enabled ]]; then
     exit 0
 fi
 
-overlay_rootfs_base() {
-    if findmnt -rn -T /run/overlay/rootfsbase >/dev/null 2>&1; then
-        echo /run/overlay/rootfsbase
+find_unpack_source() {
+    local root_opts lowerdirs first_lower
+
+    for candidate in /run/overlay/rootfsbase /run/rootfsbase; do
+        if findmnt -rn -T "${candidate}" >/dev/null 2>&1; then
+            echo "${candidate}"
+            return 0
+        fi
+    done
+
+    root_opts="$(findmnt -rn -o OPTIONS / 2>/dev/null || true)"
+    lowerdirs="$(printf '%s' "${root_opts}" | sed -n 's/.*lowerdir=\([^,]*\).*/\1/p')"
+    first_lower="${lowerdirs%%:*}"
+    if [[ -n "${first_lower}" && -d "${first_lower}" ]]; then
+        echo "${first_lower}"
         return 0
     fi
-    if findmnt -rn -T /run/rootfsbase >/dev/null 2>&1; then
-        echo /run/rootfsbase
+
+    if [[ "$(findmnt -rn -o FSTYPE / 2>/dev/null || true)" == "squashfs" ]]; then
+        echo "/"
         return 0
     fi
+
     return 1
 }
 
-if ! overlay_rootfs_base >/dev/null; then
-    # Kiwi USB may expose squashfs+btrfs without /run/overlay/rootfsbase on early boot.
-    if ! findmnt -rn -o FSTYPE / | grep -qE 'overlay|squashfs'; then
-        echo "Sisyphus installer: overlay rootfsbase missing (not in overlayroot live mode?)" >&2
-        exit 1
+normalize_unpack_source() {
+    local source="${1}"
+    if [[ -f "${source}/LiveOS/rootfs.img" ]]; then
+        echo "${source}/LiveOS/rootfs.img"
+        return 0
     fi
-    echo "Sisyphus installer: proceeding without rootfsbase (squashfs/overlay live media)" >>"$LOG"
-else
-    # Dynamically configure unpackfs to use the correct mountpoint
+    if [[ -f "${source}/LiveOS/ext3fs.img" ]]; then
+        echo "${source}/LiveOS/ext3fs.img"
+        return 0
+    fi
+    echo "${source}"
+}
+
+write_unpackfs_conf() {
+    local source="${1}" sourcefs=""
+    if [[ -d "${source}" ]]; then
+        cat > /etc/calamares/modules/unpackfs.conf <<EOF
+---
+unpack:
+    - source: "${source}"
+      destination: ""
+EOF
+        return 0
+    fi
+
+    sourcefs="$(blkid -o value -s TYPE "${source}" 2>/dev/null || true)"
+    [[ -n "${sourcefs}" ]] || sourcefs="squashfs"
+
     cat > /etc/calamares/modules/unpackfs.conf <<EOF
 ---
 unpack:
-    - source: "$(overlay_rootfs_base)"
-      sourcefs: "squashfs"
+    - source: "${source}"
+      sourcefs: "${sourcefs}"
       destination: ""
 EOF
+}
+
+unpack_source="$(find_unpack_source 2>/dev/null || true)"
+if [[ -z "${unpack_source}" ]]; then
+    echo "Sisyphus installer: unable to determine unpackfs source from live media" >&2
+    exit 1
 fi
+
+unpack_source="$(normalize_unpack_source "${unpack_source}")"
+if [[ ! -e "${unpack_source}" ]]; then
+    echo "Sisyphus installer: unpackfs source does not exist: ${unpack_source}" >&2
+    exit 1
+fi
+
+write_unpackfs_conf "${unpack_source}"
+echo "Sisyphus installer: using unpackfs source ${unpack_source}" >>"${LOG}"
 
 if pgrep -x calamares >/dev/null 2>&1; then
     exit 0

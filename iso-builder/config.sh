@@ -103,7 +103,7 @@ if command -v dracut >/dev/null 2>&1; then
     KERNEL=$(ls -1 /lib/modules 2>/dev/null | tail -1)
     if [[ -n "${KERNEL}" ]]; then
         dracut --force --kver "${KERNEL}" \
-            --add "90forge" \
+            --add "forge" \
             --install "forge-core forgectl forge-logind" \
             2>&1 || dracut --force --regenerate-all 2>&1 || true
     else
