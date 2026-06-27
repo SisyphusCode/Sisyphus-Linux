@@ -36,9 +36,11 @@ fi
 if ! getent passwd cosmic-greeter >/dev/null 2>&1; then
     useradd -r -d /var/lib/cosmic-greeter -s /sbin/nologin -c "Cosmic Greeter Account" cosmic-greeter
 fi
-if getent group video >/dev/null 2>&1; then
-    usermod -aG video cosmic-greeter 2>/dev/null || true
-fi
+for grp in video render input seat; do
+    if getent group "$grp" >/dev/null 2>&1; then
+        usermod -aG "$grp" cosmic-greeter 2>/dev/null || true
+    fi
+done
 mkdir -p /var/lib/cosmic-greeter /run/cosmic-greeter
 chown cosmic-greeter:cosmic-greeter /var/lib/cosmic-greeter /run/cosmic-greeter
 chmod 0750 /var/lib/cosmic-greeter
@@ -54,12 +56,19 @@ chmod 0755 /usr/libexec/forge/start-cosmic-greeter.sh 2>/dev/null || true
 chmod 0755 /usr/libexec/forge/pam-forge-login-session.sh 2>/dev/null || true
 chmod 0755 /usr/libexec/forge/pam-logind-create-session.py 2>/dev/null || true
 chmod 0755 /usr/libexec/forge/forge-cosmic-greeter-session.py 2>/dev/null || true
+chmod 0755 /usr/libexec/forge/cosmic-greeter-setup.sh 2>/dev/null || true
+chmod 0755 /usr/libexec/forge/desktop-ready.sh 2>/dev/null || true
 chmod 0755 /usr/libexec/forge/*.sh 2>/dev/null || true
 chmod 0755 /usr/libexec/sisyphus/*.sh 2>/dev/null || true
 
 # Enable Calamares native installer on overlayroot live media (Kiwi OEM).
 mkdir -p /etc/sisyphus
 touch /etc/sisyphus/installer-enabled
+
+# Forge owns display-manager — disable stock greetd/cosmic-greeter systemd units.
+systemctl mask cosmic-greeter.service 2>/dev/null || \
+    ln -sf /dev/null /etc/systemd/system/cosmic-greeter.service
+rm -f /etc/systemd/system/display-manager.service
 
 # Boot to graphical target with COSMIC greeter stack.
 echo graphical > /etc/forge/default.target

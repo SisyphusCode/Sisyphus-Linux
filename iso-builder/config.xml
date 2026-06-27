@@ -103,6 +103,7 @@
 
         <!-- Session / policy -->
         <package name="polkit"/>
+        <package name="systemd-pam"/>
         <package name="accountsservice"/>
         <package name="sudo"/>
         <package name="util-linux"/>
@@ -119,6 +120,7 @@
         <package name="libevdev"/>
 
         <!-- Graphics -->
+        <package name="linux-firmware"/>
         <package name="mesa-dri-drivers"/>
         <package name="mesa-vulkan-drivers"/>
         <package name="mesa-libGL"/>
