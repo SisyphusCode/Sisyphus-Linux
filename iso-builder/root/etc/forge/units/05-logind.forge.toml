@@ -2,7 +2,7 @@
 name = "logind"
 exec = "/usr/libexec/forge/start-logind.sh"
 args = []
-type = "simple"
+type = "notify"
 requires = ["systemd1-stub"]
 after = ["forge-early", "dbus", "systemd1-stub", "udev"]
 restart = "on-failure"

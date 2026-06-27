@@ -191,6 +191,8 @@
         <package name="openssh-clients"/>
         <package name="openssh-server"/>
         <package name="calamares"/>
+        <package name="qt5-qtwayland"/>
+        <package name="qt6-qtwayland"/>
         <package name="chrony"/>
         <package name="firewalld"/>
         <package name="rsync"/>

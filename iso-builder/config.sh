@@ -206,4 +206,14 @@ printf '%s\n' "$machine_id" > /var/lib/dbus/machine-id
 printf '%s\n' "$machine_id" > /etc/machine-id
 chmod 0644 /etc/machine-id /var/lib/dbus/machine-id
 
+
+# Remove EFI fallback loader to prevent it from registering a new NVRAM boot entry
+# every time the USB boots (which causes the "blue screen asking to reset or continue" on Lenovo).
+for fbx64 in /boot/efi/EFI/BOOT/fbx64.efi /boot/efi/EFI/fedora/fbx64.efi; do
+    if [[ -f "$fbx64" ]]; then
+        echo "==> Removing EFI fallback loader: $fbx64"
+        rm -f "$fbx64"
+    fi
+done
+
 echo "==> Sisyphus Linux configuration complete"

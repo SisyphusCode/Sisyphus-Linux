@@ -28,6 +28,15 @@ if ! overlay_rootfs_base >/dev/null; then
         exit 1
     fi
     echo "Sisyphus installer: proceeding without rootfsbase (squashfs/overlay live media)" >>"$LOG"
+else
+    # Dynamically configure unpackfs to use the correct mountpoint
+    cat > /etc/calamares/modules/unpackfs.conf <<EOF
+---
+unpack:
+    - source: "$(overlay_rootfs_base)"
+      sourcefs: "squashfs"
+      destination: ""
+EOF
 fi
 
 if pgrep -x calamares >/dev/null 2>&1; then
@@ -45,7 +54,7 @@ WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}"
 CG_BUS="unix:path=${CG_RUNTIME}/bus"
 
 # Detach from the forge service process tree — Calamares Qt refuses dead QML parents.
-setsid runuser -u cosmic-greeter -- env \
+setsid env \
     XDG_RUNTIME_DIR="$CG_RUNTIME" \
     WAYLAND_DISPLAY="$WAYLAND_DISPLAY" \
     DBUS_SESSION_BUS_ADDRESS="$CG_BUS" \
@@ -54,5 +63,5 @@ setsid runuser -u cosmic-greeter -- env \
     QT_QPA_PLATFORM=wayland \
     calamares >>"$LOG" 2>&1 &
 
-echo "=== $(date -Is 2>/dev/null || date) calamares spawned pid=$! uid=cosmic-greeter WAYLAND_DISPLAY=$WAYLAND_DISPLAY runtime=$CG_RUNTIME ===" >>"$LOG"
+echo "=== $(date -Is 2>/dev/null || date) calamares spawned pid=$! uid=$(id -u) WAYLAND_DISPLAY=$WAYLAND_DISPLAY runtime=$CG_RUNTIME ===" >>"$LOG"
 exit 0
