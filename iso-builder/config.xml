@@ -44,6 +44,13 @@
             <signing key="https://download.copr.fedorainfracloud.org/results/sisyphuscode/tuned-rs/pubkey.gpg"/>
         </source>
     </repository>
+    
+    <!-- CachyOS kernel from bieszczaders COPR -->
+    <repository type="rpm-md" alias="copr-kernel-cachyos" priority="5" package_gpgcheck="false" repository_gpgcheck="false">
+        <source path="https://download.copr.fedorainfracloud.org/results/bieszczaders/kernel-cachyos/fedora-rawhide-x86_64/">
+            <signing key="https://download.copr.fedorainfracloud.org/results/bieszczaders/kernel-cachyos/pubkey.gpg"/>
+        </source>
+    </repository>
 
     <!-- Bundled packages not yet in Rawhide (pop-sound-theme for cosmic-settings-daemon) -->
     <repository type="rpm-md" alias="sisyphus-local" priority="1" package_gpgcheck="false" repository_gpgcheck="false">
@@ -67,9 +74,9 @@
         <ignore name="tlp-rdw"/>
 
         <!-- Boot stack -->
-        <package name="kernel"/>
-        <package name="kernel-modules"/>
-        <package name="kernel-modules-extra"/>
+        <package name="kernel-cachyos"/>
+        <package name="kernel-cachyos-modules"/>
+        <package name="kernel-cachyos-modules-extra"/>
         <package name="dracut"/>
         <package name="dracut-config-generic"/>
         <package name="dracut-network"/>

@@ -1,7 +1,8 @@
 [service]
 name = "systemd1-stub"
-description = "Rust forge-core owns org.freedesktop.systemd1 — no Python stub"
-exec = "/bin/true"
+exec = "/usr/libexec/forge/systemd1-stub-wrapper.sh"
 args = []
-type = "oneshot"
+type = "dbus"
+bus-name = "org.freedesktop.systemd1"
 after = ["dbus"]
+restart = "on-failure"
