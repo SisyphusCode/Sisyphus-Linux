@@ -1,0 +1,7 @@
+[service]
+name = "systemd1-stub"
+description = "Rust forge-core owns org.freedesktop.systemd1 — no Python stub"
+exec = "/bin/true"
+args = []
+type = "oneshot"
+after = ["dbus"]

@@ -48,9 +48,18 @@ from gi.repository import GLib
 
 
 def _unit_object_path(name: str) -> str:
-    # systemd unit paths: session-c1.scope -> /org/freedesktop/systemd1/unit/session_c1_scope
-    slug = name.replace("-", "_").replace(".", "_")
-    return f"/org/freedesktop/systemd1/unit/{slug}"
+    # systemd bus path encoding (see bus_path_encode_unique in systemd).
+    encoded: list[str] = []
+    for ch in name:
+        if ch == "-":
+            encoded.append("_2d")
+        elif ch == ".":
+            encoded.append("_2e")
+        elif ch == "_":
+            encoded.append("_5f")
+        else:
+            encoded.append(ch)
+    return f"/org/freedesktop/systemd1/unit/{''.join(encoded)}"
 
 
 class ForgeScope(dbus.service.Object):
@@ -94,7 +103,7 @@ class ForgeSystemd1(dbus.service.Object):
     @dbus.service.method(MANAGER_IFACE, in_signature="ssa(sv)a(sa(sv))", out_signature="o")
     def StartTransientUnit(self, name, mode, properties, aux):
         if name.startswith("session-") and name.endswith(".scope"):
-            self._handle_session_scope(name, properties)
+            self._handle_session_scope(name, properties, aux)
         else:
             self._handle_unit(name)
         def emit_done():
@@ -134,11 +143,21 @@ class ForgeSystemd1(dbus.service.Object):
             self._scopes[name] = scope
         return scope
 
-    def _handle_session_scope(self, name: str, properties) -> None:
+    def _handle_session_scope(self, name: str, properties, aux=None) -> None:
         self._ensure_scope(name)
         leader = _leader_from_properties(properties)
+        if leader is None and aux:
+            for aux_unit in aux or []:
+                if len(aux_unit) < 2:
+                    continue
+                leader = _leader_from_properties(aux_unit[1])
+                if leader is not None:
+                    break
         if leader is None:
-            _log(f"{name}: no leader PID in StartTransientUnit properties")
+            _log(
+                f"{name}: no leader PID in StartTransientUnit "
+                f"properties={properties!r} aux={aux!r}"
+            )
             return
         cgroup = f"/sys/fs/cgroup/{name}"
         try:
@@ -212,6 +231,23 @@ class ForgeSystemd1(dbus.service.Object):
         _log(f"user@{uid}.service: started session bus + stub at {bus_path}")
 
 
+def _dbus_scalar(value):
+    if value is None:
+        return None
+    if isinstance(value, (dbus.String, str)):
+        return str(value)
+    if isinstance(value, (dbus.Int32, dbus.Int64, dbus.UInt32, dbus.UInt64, int)):
+        return int(value)
+    if isinstance(value, (dbus.Array, list, tuple)):
+        return [_dbus_scalar(item) for item in value]
+    if isinstance(value, dbus.Struct):
+        return tuple(_dbus_scalar(item) for item in value)
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return value
+
+
 def _leader_from_properties(properties):
     leader = None
     pids: list[int] = []
@@ -219,18 +255,28 @@ def _leader_from_properties(properties):
         if len(entry) < 2:
             continue
         key = str(entry[0])
-        value = entry[1]
-        if key == "Leader":
+        value = _dbus_scalar(entry[1])
+        if key in ("Leader", "MainPID", "main-pid"):
             try:
                 leader = int(value)
             except (TypeError, ValueError):
                 pass
-        elif key == "PIDs":
-            try:
-                pids = [int(pid) for pid in value]
-            except (TypeError, ValueError):
-                pass
-    return leader or (pids[0] if pids else None)
+        elif key in ("PIDs", "PID"):
+            if isinstance(value, list):
+                for pid in value:
+                    try:
+                        pids.append(int(pid))
+                    except (TypeError, ValueError):
+                        pass
+            else:
+                try:
+                    pids.append(int(value))
+                except (TypeError, ValueError):
+                    pass
+    result = leader or (pids[0] if pids else None)
+    if result is None:
+        _log(f"StartTransientUnit: no leader in properties={properties!r}")
+    return result
 
 
 def _log(msg: str) -> None:

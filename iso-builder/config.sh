@@ -43,8 +43,13 @@ for grp in video render input seat; do
 done
 mkdir -p /var/lib/cosmic-greeter /run/cosmic-greeter
 chown cosmic-greeter:cosmic-greeter /var/lib/cosmic-greeter /run/cosmic-greeter
-chmod 0750 /var/lib/cosmic-greeter
+chmod 0755 /var/lib/cosmic-greeter
 chmod 0755 /run/cosmic-greeter
+# Pre-create cosmic config skeleton for greeter to avoid cosmic-config permission issues at runtime
+for id in com.system76.CosmicComp com.system76.CosmicSettings.Shortcuts com.system76.CosmicSettings.WindowRules com.system76.CosmicTk; do
+    mkdir -p "/var/lib/cosmic-greeter/.config/cosmic/${id}/v1"
+done
+chown -R cosmic-greeter:cosmic-greeter /var/lib/cosmic-greeter
 if command -v systemd-tmpfiles >/dev/null 2>&1; then
     systemd-tmpfiles --create /usr/lib/tmpfiles.d/cosmic-greeter.conf 2>/dev/null || true
 fi

@@ -44,8 +44,12 @@ def _terminate_stale_sessions(iface, user: str) -> None:
             _log(f"TerminateSession {sid}: {exc!r}")
 
 
-def _session_env(runtime: str, bus_addr: str, vtnr: int) -> dict[str, str]:
+def _session_env(runtime: str, bus_addr: str, vtnr: int, pw_dir: str) -> dict[str, str]:
     return {
+        "HOME": pw_dir,
+        "XDG_CONFIG_HOME": f"{pw_dir}/.config",
+        "XDG_STATE_HOME": f"{pw_dir}/.local/state",
+        "XDG_DATA_HOME": f"{pw_dir}/.local/share",
         "XDG_RUNTIME_DIR": runtime,
         "DBUS_SESSION_BUS_ADDRESS": f"unix:path={runtime}/bus",
         "DBUS_SYSTEM_BUS_ADDRESS": bus_addr,
@@ -140,8 +144,25 @@ def main() -> int:
         os.initgroups(user, pw.pw_gid)
         os.setuid(uid)
         os.chdir(pw.pw_dir)
-        env = os.environ.copy()
-        env.update(_session_env(runtime, bus_addr, vtnr))
+        # Clean stale sockets in our own runtime dir (leftover from previous crash in restart loop)
+        try:
+            for name in os.listdir(runtime):
+                if name.startswith('wayland-') or name.startswith('.X') or 'X' in name:
+                    p = os.path.join(runtime, name)
+                    try:
+                        if os.path.isdir(p):
+                            import shutil
+                            shutil.rmtree(p, ignore_errors=True)
+                        else:
+                            os.unlink(p)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+        env = _session_env(runtime, bus_addr, vtnr, pw.pw_dir)
+        env["PATH"] = os.environ.get("PATH", "/usr/bin:/bin")
+        env["LANG"] = os.environ.get("LANG", "en_US.UTF-8")
+        env["LC_ALL"] = os.environ.get("LC_ALL", env["LANG"])
         os.execvpe("/usr/bin/cosmic-greeter-start", ["/usr/bin/cosmic-greeter-start"], env)
         os._exit(127)
 

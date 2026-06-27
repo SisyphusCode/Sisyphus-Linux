@@ -2,6 +2,7 @@
 """Launch cosmic-greeter with a proper logind session under Forge PID 1."""
 import os
 import sys
+import threading
 import time
 
 try:
@@ -44,8 +45,35 @@ def _terminate_stale_sessions(iface, user: str) -> None:
             _log(f"TerminateSession {sid}: {exc!r}")
 
 
-def _session_env(runtime: str, bus_addr: str, vtnr: int) -> dict[str, str]:
+def _find_existing_session(iface, user: str, seat: str = "seat0") -> str | None:
+    for entry in iface.ListSessions():
+        if len(entry) < 4:
+            continue
+        sid, _uid, uname, sess_seat = entry[0], entry[1], entry[2], entry[3]
+        if str(uname) != user:
+            continue
+        if seat and str(sess_seat) not in (seat, ""):
+            continue
+        return str(sid)
+    return None
+
+
+def _recover_session_after_create_failure(iface, user: str, seat: str = "seat0") -> str | None:
+    """logind may create the session but miss the D-Bus reply when systemd1 is busy."""
+    for _ in range(100):
+        sid = _find_existing_session(iface, user, seat)
+        if sid:
+            return sid
+        time.sleep(0.1)
+    return None
+
+
+def _session_env(runtime: str, bus_addr: str, vtnr: int, pw_dir: str) -> dict[str, str]:
     return {
+        "HOME": pw_dir,
+        "XDG_CONFIG_HOME": f"{pw_dir}/.config",
+        "XDG_STATE_HOME": f"{pw_dir}/.local/state",
+        "XDG_DATA_HOME": f"{pw_dir}/.local/share",
         "XDG_RUNTIME_DIR": runtime,
         "DBUS_SESSION_BUS_ADDRESS": f"unix:path={runtime}/bus",
         "DBUS_SYSTEM_BUS_ADDRESS": bus_addr,
@@ -140,8 +168,25 @@ def main() -> int:
         os.initgroups(user, pw.pw_gid)
         os.setuid(uid)
         os.chdir(pw.pw_dir)
-        env = os.environ.copy()
-        env.update(_session_env(runtime, bus_addr, vtnr))
+        # Clean stale sockets in our own runtime dir (leftover from previous crash in restart loop)
+        try:
+            for name in os.listdir(runtime):
+                if name.startswith('wayland-') or name.startswith('.X') or 'X' in name:
+                    p = os.path.join(runtime, name)
+                    try:
+                        if os.path.isdir(p):
+                            import shutil
+                            shutil.rmtree(p, ignore_errors=True)
+                        else:
+                            os.unlink(p)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+        env = _session_env(runtime, bus_addr, vtnr, pw.pw_dir)
+        env["PATH"] = os.environ.get("PATH", "/usr/bin:/bin")
+        env["LANG"] = os.environ.get("LANG", "en_US.UTF-8")
+        env["LC_ALL"] = os.environ.get("LC_ALL", env["LANG"])
         os.execvpe("/usr/bin/cosmic-greeter-start", ["/usr/bin/cosmic-greeter-start"], env)
         os._exit(127)
 
@@ -150,34 +195,64 @@ def main() -> int:
         return 1
 
     os.close(sync_r)
-    try:
-        result = logind.CreateSession(
-            dbus.UInt32(uid),
-            dbus.UInt32(child),
-            "cosmic-greeter",
-            "wayland",
-            "greeter",
-            "COSMIC",
-            "seat0",
-            dbus.UInt32(vtnr),
-            tty,
-            "",
-            dbus.Boolean(False),
-            "",
-            "",
-            dbus.Array([], signature="(sv)"),
-        )
-        session_id = str(result[0])
-        _log(
-            f"CreateSession ok user={user} leader={child} id={session_id} runtime={runtime}"
-        )
+    session_id = None
+    create_exc = None
+    create_result: dict[str, object] = {}
+
+    def _create_session_worker() -> None:
         try:
-            logind.ActivateSession(session_id)
-            logind.ActivateSessionOnSeat(session_id, "seat0")
-        except dbus.exceptions.DBusException as exc:
-            _log(f"ActivateSession {session_id}: {exc!r}")
-    except Exception as exc:  # noqa: BLE001
-        _log(f"CreateSession failed user={user}: {exc!r}")
+            result = logind.CreateSession(
+                dbus.UInt32(uid),
+                dbus.UInt32(child),
+                "cosmic-greeter",
+                "wayland",
+                "greeter",
+                "COSMIC",
+                "seat0",
+                dbus.UInt32(vtnr),
+                tty,
+                "",
+                dbus.Boolean(False),
+                "",
+                "",
+                dbus.Array([], signature="(sv)"),
+            )
+            create_result["sid"] = str(result[0])
+        except Exception as exc:  # noqa: BLE001
+            create_result["exc"] = exc
+
+    threading.Thread(target=_create_session_worker, daemon=True).start()
+    for _ in range(150):
+        if create_result.get("sid"):
+            session_id = str(create_result["sid"])
+            _log(
+                f"CreateSession ok user={user} leader={child} "
+                f"id={session_id} runtime={runtime}"
+            )
+            break
+        sid = _find_existing_session(logind, user)
+        if sid:
+            session_id = sid
+            create_exc = create_result.get("exc")
+            _log(
+                f"CreateSession recovered existing session {session_id} "
+                f"leader={child} err={create_exc!r}"
+            )
+            break
+        time.sleep(0.2)
+
+    if session_id is None:
+        create_exc = create_result.get("exc")
+        if create_exc:
+            _log(f"CreateSession failed user={user}: {create_exc!r}")
+        session_id = _recover_session_after_create_failure(logind, user)
+        if session_id:
+            _log(
+                f"CreateSession recovered existing session {session_id} "
+                f"after failure leader={child} err={create_exc!r}"
+            )
+
+    if session_id is None:
         try:
             os.kill(child, 15)
         except OSError:
@@ -186,12 +261,18 @@ def main() -> int:
         if os.WIFEXITED(status):
             return os.WEXITSTATUS(status)
         return 1
-    finally:
-        try:
-            os.write(sync_w, b"\0")
-        except OSError:
-            pass
-        os.close(sync_w)
+
+    try:
+        logind.ActivateSession(session_id)
+        logind.ActivateSessionOnSeat(session_id, "seat0")
+    except dbus.exceptions.DBusException as exc:
+        _log(f"ActivateSession {session_id}: {exc!r}")
+
+    try:
+        os.write(sync_w, b"\0")
+    except OSError:
+        pass
+    os.close(sync_w)
 
     if os.path.exists(tty):
         os.system(f"chvt {vtnr} >/dev/null 2>&1")

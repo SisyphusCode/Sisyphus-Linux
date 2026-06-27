@@ -85,6 +85,11 @@ mkdir -p "${ROOT}/var/lib/cosmic-greeter" "${ROOT}/run/cosmic-greeter"
 cg_uid="$(chroot "${ROOT}" id -u cosmic-greeter 2>/dev/null || echo "")"
 if [[ -n "${cg_uid}" ]]; then
     chown "${cg_uid}:${cg_uid}" "${ROOT}/var/lib/cosmic-greeter" 2>/dev/null || true
+    for id in com.system76.CosmicComp com.system76.CosmicSettings.Shortcuts com.system76.CosmicSettings.WindowRules com.system76.CosmicTk; do
+        mkdir -p "${ROOT}/var/lib/cosmic-greeter/.config/cosmic/${id}/v1"
+    done
+    chown -R "${cg_uid}:${cg_uid}" "${ROOT}/var/lib/cosmic-greeter"
+    chmod 0755 "${ROOT}/var/lib/cosmic-greeter"
 fi
 
 if [[ -f "${ROOT}/etc/default/grub" ]] \

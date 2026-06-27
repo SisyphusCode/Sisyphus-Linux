@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Prepare COSMIC greeter DRM/VT on hybrid laptops (Intel panel + discrete GPU).
 set -euo pipefail
-modprobe -q virtio_gpu virtio_pci drm || true
 
 LOG=/var/log/forge/cosmic-greeter-setup.log
 mkdir -p /var/log/forge /run/cosmic-greeter
@@ -66,7 +65,6 @@ if [[ -n "$DRM_DEVICES" ]]; then
   cat >/run/cosmic-greeter/environment <<EOF
 WLR_DRM_DEVICES=${DRM_DEVICES}
 WLR_NO_HARDWARE_CURSORS=1
-LIBSEAT_BACKEND=builtin
 EOF
   chmod 0644 /run/cosmic-greeter/environment
 else

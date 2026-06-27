@@ -1,21 +1,32 @@
 #!/usr/bin/sh
 # Forge overlay — log greeter session output; pick the panel GPU on hybrid laptops.
-LOG=/run/cosmic-greeter/cosmic-greeter-session.log
-mkdir -p /run/cosmic-greeter
+LOG=/var/log/forge/cosmic-greeter-session.log
+mkdir -p /run/cosmic-greeter /var/log/forge
 exec >>"$LOG" 2>&1
 echo "=== $(date -Is 2>/dev/null || date) cosmic-greeter-start uid=$(id -u) ==="
 rm -rf /run/cosmic-greeter/cosmic/com.system76.CosmicSettingsDaemon/v1/* 2>/dev/null
 
 uid=$(id -u)
+greeter_home="/var/lib/cosmic-greeter"
+export RUST_BACKTRACE=1
+export RUST_LOG="${RUST_LOG:-cosmic_comp=debug,cosmic_greeter=debug,winit=info}"
+unset FLATPAK_ID HOST_XDG_CONFIG_HOME HOST_XDG_DATA_HOME HOST_XDG_STATE_HOME
+export HOME="$greeter_home"
+export XDG_CONFIG_HOME="${greeter_home}/.config"
+export XDG_STATE_HOME="${greeter_home}/.local/state"
+export XDG_DATA_HOME="${greeter_home}/.local/share"
 export XDG_RUNTIME_DIR="/run/user/${uid}"
-mkdir -p "$XDG_RUNTIME_DIR"
+mkdir -p "$XDG_CONFIG_HOME" "$XDG_STATE_HOME" "$XDG_DATA_HOME" "$XDG_RUNTIME_DIR" /run/cosmic-greeter/cosmic
 chmod 0700 "$XDG_RUNTIME_DIR" 2>/dev/null || true
+echo "cosmic-greeter-start: HOME=${HOME} XDG_CONFIG_HOME=${XDG_CONFIG_HOME} XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR}"
 export XDG_SESSION_TYPE=wayland
 export XDG_SESSION_CLASS=greeter
 export XDG_CURRENT_DESKTOP=COSMIC
 export XDG_SEAT=seat0
 export XDG_VTNR=1
 export GDK_BACKEND=wayland
+export WLR_NO_HARDWARE_CURSORS=1
+export LIBSEAT_BACKEND=builtin
 
 if [[ -f /run/cosmic-greeter/environment ]]; then
   # shellcheck disable=SC1091
@@ -36,7 +47,8 @@ if [[ -z "${WLR_DRM_DEVICES:-}" ]]; then
   done
 fi
 
+export WLR_DRM_DEVICES="${WLR_DRM_DEVICES:-card0}"
 export WLR_NO_HARDWARE_CURSORS="${WLR_NO_HARDWARE_CURSORS:-1}"
-echo "cosmic-greeter-start: WLR_DRM_DEVICES=${WLR_DRM_DEVICES:-auto}"
+echo "cosmic-greeter-start: WLR_DRM_DEVICES=${WLR_DRM_DEVICES} LIBSEAT_BACKEND=${LIBSEAT_BACKEND}"
 
 exec cosmic-comp cosmic-greeter

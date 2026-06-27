@@ -9,6 +9,18 @@ echo "=== $(date -Is 2>/dev/null || date) desktop-ready start ==="
 
 BUS="${DBUS_SYSTEM_BUS_ADDRESS:-unix:path=/run/dbus/system_bus_socket}"
 
+dbus_name_owned() {
+    local name="$1"
+    if command -v busctl >/dev/null 2>&1; then
+        busctl --address="$BUS" call org.freedesktop.DBus /org/freedesktop/DBus \
+            org.freedesktop.DBus NameHasOwner s "$name" 2>/dev/null | grep -q 'true'
+        return $?
+    fi
+    dbus-send --address="$BUS" --dest=org.freedesktop.DBus --print-reply \
+        /org/freedesktop/DBus org.freedesktop.DBus.NameHasOwner "string:$name" 2>/dev/null \
+        | grep -q 'boolean true'
+}
+
 if [[ -x /usr/libexec/forge/forge-run-layout.sh ]]; then
   /usr/libexec/forge/forge-run-layout.sh || true
 fi
@@ -27,8 +39,8 @@ for _ in $(seq 1 50); do
   sleep 0.1
 done
 
-for _ in $(seq 1 150); do
-  busctl --address="$BUS" status org.freedesktop.systemd1 >/dev/null 2>&1 && break
+for _ in $(seq 1 50); do
+  dbus_name_owned org.freedesktop.systemd1 && break
   sleep 0.1
 done
 
