@@ -161,8 +161,9 @@ def main() -> int:
     child = os.fork()
     if child == 0:
         os.close(sync_w)
-        os.read(sync_r, 1)
+        session_id_bytes = os.read(sync_r, 64)
         os.close(sync_r)
+        session_id = session_id_bytes.decode("utf-8").strip("\0")
         os.setsid()
         os.setgid(pw.pw_gid)
         os.initgroups(user, pw.pw_gid)
@@ -187,6 +188,7 @@ def main() -> int:
         env["PATH"] = os.environ.get("PATH", "/usr/bin:/bin")
         env["LANG"] = os.environ.get("LANG", "en_US.UTF-8")
         env["LC_ALL"] = os.environ.get("LC_ALL", env["LANG"])
+        env["XDG_SESSION_ID"] = session_id
         os.execvpe("/usr/bin/cosmic-greeter-start", ["/usr/bin/cosmic-greeter-start"], env)
         os._exit(127)
 
@@ -269,7 +271,7 @@ def main() -> int:
         _log(f"ActivateSession {session_id}: {exc!r}")
 
     try:
-        os.write(sync_w, b"\0")
+        os.write(sync_w, session_id.encode("utf-8") + b"\0")
     except OSError:
         pass
     os.close(sync_w)

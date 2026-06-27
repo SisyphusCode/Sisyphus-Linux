@@ -26,7 +26,7 @@ export XDG_SEAT=seat0
 export XDG_VTNR=1
 export GDK_BACKEND=wayland
 export WLR_NO_HARDWARE_CURSORS=1
-export LIBSEAT_BACKEND=builtin
+export LIBSEAT_BACKEND=logind
 
 if [[ -f /run/cosmic-greeter/environment ]]; then
   # shellcheck disable=SC1091

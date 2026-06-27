@@ -194,7 +194,16 @@ class ForgeSystemd1(dbus.service.Object):
         env["USER"] = pw.pw_name
         env["LOGNAME"] = pw.pw_name
 
+        def drop_privs():
+            try:
+                os.initgroups(pw.pw_name, pw.pw_gid)
+                os.setgid(pw.pw_gid)
+                os.setuid(uid_i)
+            except OSError:
+                pass
+
         # systemd --user refuses to run when PID 1 is not systemd; provide a session bus stub instead.
+        # Drop privileges cleanly natively in Python to preserve the environment variables
         subprocess.Popen(
             [
                 "/usr/bin/dbus-daemon",
@@ -209,6 +218,7 @@ class ForgeSystemd1(dbus.service.Object):
             stderr=subprocess.DEVNULL,
             start_new_session=True,
             cwd=pw.pw_dir,
+            preexec_fn=drop_privs,
         )
         for _ in range(50):
             if os.path.exists(bus_path):
@@ -227,8 +237,31 @@ class ForgeSystemd1(dbus.service.Object):
             stderr=subprocess.DEVNULL,
             start_new_session=True,
             cwd=pw.pw_dir,
+            preexec_fn=drop_privs,
         )
-        _log(f"user@{uid}.service: started session bus + stub at {bus_path}")
+        
+        # Start pipewire and wireplumber to satisfy cosmic-greeter and cosmic-comp audio dependencies
+        subprocess.Popen(
+            ["/usr/bin/pipewire"],
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+            cwd=pw.pw_dir,
+            preexec_fn=drop_privs,
+        )
+        subprocess.Popen(
+            ["/usr/bin/wireplumber"],
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+            cwd=pw.pw_dir,
+            preexec_fn=drop_privs,
+        )
+        _log(f"user@{uid}.service: started session bus + audio + stub at {bus_path}")
 
 
 def _dbus_scalar(value):

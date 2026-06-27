@@ -66,7 +66,7 @@ if [[ -n "$DRM_DEVICES" ]]; then
   cat >/run/cosmic-greeter/environment <<EOF
 WLR_DRM_DEVICES=${DRM_DEVICES}
 WLR_NO_HARDWARE_CURSORS=1
-LIBSEAT_BACKEND=builtin
+LIBSEAT_BACKEND=logind
 EOF
   chmod 0644 /run/cosmic-greeter/environment
 else

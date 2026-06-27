@@ -76,7 +76,6 @@
         <!-- Boot stack -->
         <package name="kernel-cachyos"/>
         <package name="kernel-cachyos-modules"/>
-        <package name="kernel-cachyos-modules-extra"/>
         <package name="dracut"/>
         <package name="dracut-config-generic"/>
         <package name="dracut-network"/>

@@ -59,7 +59,8 @@ prepare_cosmic_greeter_dirs() {
     if [[ -d "${shortcuts_share}" ]]; then
         cp -af "${shortcuts_share}/." "${shortcuts_cfg}/" 2>/dev/null || true
     fi
-    chown -R cosmic-greeter:cosmic-greeter /var/lib/cosmic-greeter /run/cosmic-greeter "/run/user/${cg_uid}"
+    chown -R cosmic-greeter:cosmic-greeter /var/lib/cosmic-greeter /run/cosmic-greeter
+    chown cosmic-greeter:cosmic-greeter "/run/user/${cg_uid}"
     chmod 0755 /var/lib/cosmic-greeter
     chmod 0755 /run/cosmic-greeter
     chmod 0700 "/run/user/${cg_uid}"
