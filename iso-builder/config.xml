@@ -17,7 +17,7 @@
         <!-- Forge replaces PID 1; systemd stays installed for udev/NM/polkit libs -->
         <type image="oem" filesystem="btrfs" firmware="uefi"
               bootpartsize="1000"
-              kernelcmdline="init=/usr/sbin/forge-core selinux=0 quiet"
+              kernelcmdline="init=/usr/sbin/forge-core selinux=0 quiet rd.lvm=0 rd.md=0 rd.dm=0"
               overlayroot="true"
               overlayroot_readonly_filesystem="squashfs">
             <bootloader name="grub2"/>

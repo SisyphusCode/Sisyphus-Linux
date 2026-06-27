@@ -75,6 +75,14 @@ systemctl mask cosmic-greeter.service 2>/dev/null || \
     ln -sf /dev/null /etc/systemd/system/cosmic-greeter.service
 rm -f /etc/systemd/system/display-manager.service
 
+# Disable systemd getty services to prevent conflicts with Forge getty
+systemctl mask getty@.service 2>/dev/null || \
+    ln -sf /dev/null /etc/systemd/system/getty@.service
+systemctl mask getty.target 2>/dev/null || \
+    ln -sf /dev/null /etc/systemd/system/getty.target
+systemctl mask getty-pre.target 2>/dev/null || \
+    ln -sf /dev/null /etc/systemd/system/getty-pre.target
+
 # Boot to graphical target with COSMIC greeter stack.
 echo graphical > /etc/forge/default.target
 if command -v forgectl >/dev/null 2>&1; then
@@ -177,9 +185,7 @@ fi
 rm -f /etc/forge/units/01-dbus.socket.forge.toml
 
 # pop-sound-theme bundled in overlay — cosmic-settings-daemon expects it on Rawhide.
-if ls /root/pop-sound-theme-*.rpm >/dev/null 2>&1; then
-    dnf -y install /root/pop-sound-theme-*.rpm 2>/dev/null || true
-fi
+dnf -y install pop-sound-theme 2>/dev/null || true
 
 # Enable dnf COPR repos for runtime package installs
 dnf -y makecache 2>/dev/null || true

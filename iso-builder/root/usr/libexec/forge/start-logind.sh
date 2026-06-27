@@ -6,6 +6,40 @@ LOG=/var/log/forge/logind-wrapper.log
 mkdir -p /var/log/forge
 exec >>"$LOG" 2>&1
 echo "=== $(date -Is 2>/dev/null || date) start-logind ppid=$PPID pid=$$ NOTIFY_SOCKET=${NOTIFY_SOCKET:-unset} ==="
+echo "DEBUG: Checking for logind binary..."
+LOGIND=""
+candidates=(
+    /usr/libexec/elogind/elogind
+    /usr/lib/elogind/elogind
+    /usr/lib64/elogind/elogind
+    /usr/sbin/elogind
+    /usr/bin/elogind
+    /usr/lib/systemd/systemd-logind
+    /lib/systemd/systemd-logind
+    /usr/lib64/systemd/systemd-logind
+)
+for candidate in "${candidates[@]}"; do
+    if [[ -x "$candidate" ]]; then
+        LOGIND="$candidate"
+        echo "DEBUG: Found logind at $LOGIND"
+        break
+    fi
+done
+if [[ -z "$LOGIND" ]]; then
+    echo "DEBUG: ERROR - no logind binary found, trying command -v"
+    for bin in elogind systemd-logind; do
+        if command -v "$bin" >/dev/null 2>&1; then
+            LOGIND="$(command -v "$bin")"
+            echo "DEBUG: Found logind via command -v: $LOGIND"
+            break
+        fi
+    done
+fi
+[[ -n "$LOGIND" ]] || {
+    echo "DEBUG: ERROR - no elogind or systemd-logind binary found" >&2
+    exit 127
+}
+echo "DEBUG: Using logind: $LOGIND"
 
 LOGIND=""
 candidates=(

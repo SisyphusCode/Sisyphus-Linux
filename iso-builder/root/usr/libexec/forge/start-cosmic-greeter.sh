@@ -6,6 +6,30 @@ LOG=/var/log/forge/cosmic-greeter.log
 mkdir -p /var/log/forge /run/cosmic-greeter
 exec >>"$LOG" 2>&1
 echo "=== $(date -Is 2>/dev/null || date) start-cosmic-greeter ==="
+echo "DEBUG: Checking if cosmic-greeter user exists..."
+if getent passwd cosmic-greeter >/dev/null 2>&1; then
+    echo "DEBUG: cosmic-greeter user exists"
+else
+    echo "DEBUG: ERROR - cosmic-greeter user does NOT exist"
+fi
+echo "DEBUG: Checking for cosmic-comp..."
+if command -v cosmic-comp >/dev/null 2>&1; then
+    echo "DEBUG: cosmic-comp found at $(command -v cosmic-comp)"
+else
+    echo "DEBUG: ERROR - cosmic-comp NOT found"
+fi
+echo "DEBUG: Checking for cosmic-greeter..."
+if command -v cosmic-greeter >/dev/null 2>&1; then
+    echo "DEBUG: cosmic-greeter found at $(command -v cosmic-greeter)"
+else
+    echo "DEBUG: ERROR - cosmic-greeter NOT found"
+fi
+echo "DEBUG: Checking for pop-sound-theme..."
+if rpm -q pop-sound-theme >/dev/null 2>&1; then
+    echo "DEBUG: pop-sound-theme is installed"
+else
+    echo "DEBUG: ERROR - pop-sound-theme is NOT installed"
+fi
 
 BUS="${DBUS_SYSTEM_BUS_ADDRESS:-unix:path=/run/dbus/system_bus_socket}"
 
