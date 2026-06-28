@@ -84,13 +84,14 @@ pub fn mount_essential_filesystems() -> Result<(), Error> {
     {
         let target = "/dev/pts";
         let _ = fs::create_dir_all(target);
-        let data = CString::new("newinstance,ptmxmode=0666,mode=0620").unwrap();
+        let data = CString::new("newinstance,ptmxmode=0666,mode=620,gid=5").unwrap();
+        let c_src = CString::new("devpts").unwrap();
         let c_target = CString::new(target).unwrap();
         let c_fstype = CString::new("devpts").unwrap();
 
         let result = unsafe {
             mount(
-                ptr::null(),
+                c_src.as_ptr(),
                 c_target.as_ptr(),
                 c_fstype.as_ptr(),
                 MS_NOSUID | MS_NOEXEC,
@@ -106,8 +107,9 @@ pub fn mount_essential_filesystems() -> Result<(), Error> {
                 );
             }
         }
-        // Ensure /dev/ptmx symlink (many login/DM/graphics things hard-require it)
-        if !std::path::Path::new("/dev/ptmx").exists() {
+        // Ensure /dev/ptmx targets devpts; sudo/login need this for PTY allocation.
+        if std::path::Path::new("/dev/pts/ptmx").exists() {
+            let _ = std::fs::remove_file("/dev/ptmx");
             let _ = std::os::unix::fs::symlink("/dev/pts/ptmx", "/dev/ptmx");
         }
     }

@@ -13,7 +13,8 @@ except ImportError:
 
 def _log(msg: str) -> None:
     try:
-        with open("/var/log/forge/cosmic-greeter.log", "a", encoding="utf-8") as fh:
+        os.makedirs("/var/lib/forge", exist_ok=True)
+        with open("/var/lib/forge/cosmic-greeter.log", "a", encoding="utf-8") as fh:
             fh.write(msg + "\n")
     except OSError:
         pass

@@ -1,0 +1,74 @@
+#!/bin/bash
+
+type getarg >/dev/null 2>&1 || . /lib/dracut-lib.sh
+
+cmdline_root="$(getarg root= || true)"
+current_root="${root:-}"
+overlayroot=""
+
+if [ "${cmdline_root%%:*}" = "overlay" ]; then
+    overlayroot="${cmdline_root}"
+elif [ "${current_root%%:*}" = "overlay" ]; then
+    overlayroot="${current_root}"
+fi
+
+[ "${overlayroot%%:*}" = "overlay" ] || exit 0
+
+OVERLAY_BASE="/run/overlay"
+ROOTFLAGS="$(getarg rootflags || true)"
+
+write_sysroot_unit() {
+    local generator_dir="$1"
+    local options
+    local dev
+
+    [ -n "${generator_dir}" ] || return 0
+    mkdir -p "${generator_dir}"
+
+    if getargbool 0 rd.root.overlay.readonly; then
+        {
+            echo "[Unit]"
+            echo "Before=initrd-root-fs.target"
+            echo "DefaultDependencies=no"
+            echo "After=run-overlay-rootfsbase.mount"
+            echo "After=run-overlay.mount"
+            echo "[Mount]"
+            echo "Where=/sysroot"
+            echo "What=${OVERLAY_BASE}/rootfsbase"
+            echo "Options=bind"
+            echo "Type=none"
+        } > "${generator_dir}/sysroot.mount"
+        dev=ReadOnlyOS_rootfs
+    else
+        options="lowerdir=${OVERLAY_BASE}/rootfsbase,upperdir=${OVERLAY_BASE}/overlayfs/rw,workdir=${OVERLAY_BASE}/overlayfs/work"
+        if [ -n "${ROOTFLAGS}" ]; then
+            options="${ROOTFLAGS},${options}"
+        fi
+        {
+            echo "[Unit]"
+            echo "Before=initrd-root-fs.target"
+            echo "DefaultDependencies=no"
+            echo "After=run-overlay-rootfsbase.mount"
+            echo "After=run-overlay-overlayfs.mount"
+            echo "After=run-overlay.mount"
+            echo "[Mount]"
+            echo "Where=/sysroot"
+            echo "What=OverlayOS_rootfs"
+            echo "Options=${options}"
+            echo "Type=overlay"
+        } > "${generator_dir}/sysroot.mount"
+        dev=OverlayOS_rootfs
+    fi
+
+    mkdir -p "${generator_dir}/initrd-root-fs.target.requires"
+    ln -sf ../sysroot.mount "${generator_dir}/initrd-root-fs.target.requires/sysroot.mount"
+
+    mkdir -p "${generator_dir}/${dev}.device.d"
+    {
+        echo "[Unit]"
+        echo "JobTimeoutSec=3000"
+    } > "${generator_dir}/${dev}.device.d/timeout.conf"
+}
+
+write_sysroot_unit "$1"
+write_sysroot_unit "$2"

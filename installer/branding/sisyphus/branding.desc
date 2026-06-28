@@ -1,8 +1,10 @@
 ---
-componentName:  sisyphus
+componentName: sisyphus
 windowExpanding: normal
 windowSize: 800px,520px
 windowPlacement: center
+sidebar: widget,left
+navigation: widget,bottom
 
 strings:
     productName:         Sisyphus Linux
@@ -31,3 +33,10 @@ style:
 
 welcomeStyleCalamares: true
 welcomeExpandingLogo: true
+slideshow: show.qml
+slideshowAPI: 2
+
+uploadServer:
+    type: none
+    url: ""
+    sizeLimit: -1

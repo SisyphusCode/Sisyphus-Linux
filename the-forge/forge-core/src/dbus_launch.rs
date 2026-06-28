@@ -1,5 +1,5 @@
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 use crate::boot_debug;
 
@@ -40,6 +40,9 @@ pub fn prepare_runtime() {
         .status();
     let _ = Command::new("restorecon")
         .args(["-R", "/run/dbus"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .status();
     let _ = Command::new("chcon")
         .args([
@@ -51,6 +54,9 @@ pub fn prepare_runtime() {
             "system_dbusd_var_run_t",
             "/run/dbus",
         ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .status();
     boot_debug::log("dbus: prepared /run/dbus (stale socket removed, SELinux labels applied)");
 }

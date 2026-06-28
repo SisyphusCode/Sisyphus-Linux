@@ -1,6 +1,6 @@
 Name:           the-forge
 Version:        2.0.0
-Release:        7%{?dist}
+Release:        9%{?dist}
 Summary:        The Forge — Rust PID 1 init system
 
 License:        MIT
@@ -97,6 +97,14 @@ install -m 0644 %{_datadir}/forge/dbus-overrides/session-org.freedesktop.systemd
   %{_datadir}/dbus-1/services/org.freedesktop.systemd1.service 2>/dev/null || true
 
 %changelog
+* Sat Jun 27 2026 Kenny Glowner <sisyphuscode@fedoraproject.org> - 2.0.0-9
+- Fix live graphical boot devpts handling and optional early-boot noise
+- Avoid subreaper ownership conflicts for graphical sessions
+
+* Sat Jun 27 2026 Kenny Glowner <sisyphuscode@fedoraproject.org> - 2.0.0-8
+- Fix compilation warnings (unused variables, dead code)
+- Add logind_command and agetty_command to service resolver
+
 * Fri Jun 26 2026 Kenny Glowner <sisyphuscode@fedoraproject.org> - 2.0.0-7
 - Use Python systemd1-stub for logind session scopes when installed
 - systemd1-stub forge unit owns org.freedesktop.systemd1 before logind

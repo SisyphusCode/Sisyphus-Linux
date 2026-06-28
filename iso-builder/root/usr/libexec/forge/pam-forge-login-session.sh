@@ -22,9 +22,7 @@ fi
 
 if command -v python3 >/dev/null 2>&1; then
   PAM_USER="$user" PAM_UID="$uid" PAM_SERVICE="${PAM_SERVICE:-login}" PAM_TTY="${PAM_TTY:-}" \
-    python3 /usr/libexec/forge/pam-logind-create-session.py || true
+    python3 /usr/libexec/forge/pam-logind-create-session.py >/dev/null 2>&1 || true
 fi
 
-# pam_exec.so stdout → pam_putenv (greetd reads this for the greeter child)
-echo "XDG_RUNTIME_DIR=${runtime}"
 exit 0

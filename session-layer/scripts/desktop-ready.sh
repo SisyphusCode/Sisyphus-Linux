@@ -2,8 +2,8 @@
 # Last gate before GDM — graphics, SELinux labels, logind seat, systemd1 stub.
 set -euo pipefail
 
-LOG=/var/log/forge/desktop-ready.log
-mkdir -p /var/log/forge
+LOG=/var/lib/forge/desktop-ready.log
+mkdir -p "$(dirname "$LOG")"
 exec >>"$LOG" 2>&1
 echo "=== $(date -Is 2>/dev/null || date) desktop-ready start ==="
 

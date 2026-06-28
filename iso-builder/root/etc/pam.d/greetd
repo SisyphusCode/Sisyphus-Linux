@@ -1,0 +1,13 @@
+#%PAM-1.0
+# User login stack for greetd under Forge PID 1.
+
+auth            required pam_env.so
+auth            sufficient pam_unix.so nullok
+auth            required pam_deny.so
+
+account         required pam_unix.so
+
+password        required pam_deny.so
+
+session         required pam_unix.so
+session         optional pam_exec.so /usr/libexec/forge/pam-forge-login-session.sh

@@ -141,14 +141,17 @@
         <package name="acpid"/>
         <package name="cosmic-comp"/>
         <package name="cosmic-greeter"/>
+        <package name="cosmic-randr"/>
         <package name="cosmic-settings-daemon"/>
         <package name="greetd"/>
         <package name="libseat"/>
+        <package name="seatd"/>
         <package name="python3-dbus"/>
         <package name="fprintd-pam"/>
         <package name="xdg-user-dirs"/>
         <package name="open-sans-fonts"/>
         <package name="google-noto-sans-mono-fonts"/>
+        <package name="xrdb"/>
         <package name="cosmic-panel"/>
         <package name="cosmic-bg"/>
         <package name="cosmic-launcher"/>
@@ -206,6 +209,6 @@
     </packages>
 
     <users>
-        <user name="sisyphus" home="/home/sisyphus" groups="wheel" password="sisyphus" pwdformat="plain" shell="/bin/bash"/>
+        <user name="sisyphus" home="/home/sisyphus" groups="wheel,video,render,input" password="sisyphus" pwdformat="plain" shell="/bin/bash"/>
     </users>
 </image>

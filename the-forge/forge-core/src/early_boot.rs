@@ -2,7 +2,7 @@
 
 use std::fs;
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 use crate::service::ghosttype_log;
 
@@ -83,7 +83,11 @@ fn ensure_machine_id() {
 
 fn apply_selinux_labels() {
     if Path::new("/usr/libexec/forge/restorecon-forge.sh").is_file() {
-        let _ = Command::new("/usr/libexec/forge/restorecon-forge.sh").status();
+        let _ = Command::new("/usr/libexec/forge/restorecon-forge.sh")
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
     }
     let _ = Command::new("chcon")
         .args([
@@ -95,6 +99,9 @@ fn apply_selinux_labels() {
             "system_dbusd_var_run_t",
             "/run/dbus",
         ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .status();
     for dir in [
         "/run/systemd/seats",
@@ -111,6 +118,9 @@ fn apply_selinux_labels() {
                 "systemd_logind_var_run_t",
                 dir,
             ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .status();
     }
 }
@@ -169,7 +179,12 @@ fn load_kernel_modules() {
         "nvidia_modeset",
         "drm",
     ] {
-        let _ = Command::new("modprobe").arg(module).status();
+        let _ = Command::new("modprobe")
+            .arg(module)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
     }
 }
 

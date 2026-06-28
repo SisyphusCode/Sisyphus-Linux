@@ -34,22 +34,61 @@ EOF
     cat > "${ROOT}/etc/forge/units/60-display-manager.forge.toml" <<'EOF'
 [service]
 name = "display-manager"
-description = "COSMIC greeter display manager"
+description = "greetd COSMIC display manager"
 exec-start-pre = "/usr/libexec/forge/desktop-ready.sh"
-exec = "/usr/libexec/forge/start-cosmic-greeter.sh"
-args = []
+exec = "/usr/bin/greetd"
+args = ["-c", "/etc/greetd/cosmic-greeter.toml"]
 type = "simple"
+requires = ["seatd", "localed-stub", "cosmic-greeter-daemon"]
 after = [
     "multi-user",
     "dbus",
     "udev",
     "udev-settle",
     "logind",
+    "localed-stub",
     "polkit",
+    "seatd",
+    "cosmic-greeter-daemon",
     "user-sessions",
     "accounts-daemon",
     "network-setup",
 ]
+restart = "on-failure"
+EOF
+
+    cat > "${ROOT}/etc/forge/units/54-localed-stub.forge.toml" <<'EOF'
+[service]
+name = "localed-stub"
+description = "Minimal org.freedesktop.locale1 provider"
+exec = "/usr/libexec/forge/localed-stub.py"
+args = []
+type = "dbus"
+bus-name = "org.freedesktop.locale1"
+after = ["dbus"]
+restart = "on-failure"
+EOF
+
+    cat > "${ROOT}/etc/forge/units/56-seatd.forge.toml" <<'EOF'
+[service]
+name = "seatd"
+description = "Seat management daemon"
+exec = "/usr/bin/seatd"
+args = ["-g", "seat"]
+type = "simple"
+after = ["forge-early", "udev", "udev-settle"]
+restart = "on-failure"
+EOF
+
+    cat > "${ROOT}/etc/forge/units/57-cosmic-greeter-daemon.forge.toml" <<'EOF'
+[service]
+name = "cosmic-greeter-daemon"
+description = "COSMIC greeter system daemon"
+exec = "/usr/bin/cosmic-greeter-daemon"
+args = []
+type = "dbus"
+bus-name = "com.system76.CosmicGreeter"
+after = ["dbus"]
 restart = "on-failure"
 EOF
 
@@ -66,10 +105,14 @@ echo graphical > "${ROOT}/etc/forge/default.target"
 restore_forge_units
 
 if [[ -x "${ROOT}/usr/bin/forgectl" ]]; then
-    for svc in dbus udev logind polkit accounts-daemon network-setup \
-               network-manager user-sessions display-manager; do
+    for svc in dbus udev logind localed-stub polkit accounts-daemon network-setup \
+               network-manager user-sessions seatd cosmic-greeter-daemon display-manager; do
         chroot "${ROOT}" forgectl enable "${svc}" 2>/dev/null || true
     done
+fi
+
+if ! getent group -R "${ROOT}" seat >/dev/null 2>&1; then
+    chroot "${ROOT}" groupadd -r seat 2>/dev/null || true
 fi
 
 if ! getent passwd -R "${ROOT}" cosmic-greeter >/dev/null 2>&1; then
@@ -80,6 +123,11 @@ fi
 if getent group -R "${ROOT}" video >/dev/null 2>&1; then
     chroot "${ROOT}" usermod -aG video cosmic-greeter 2>/dev/null || true
 fi
+for grp in render input seat; do
+    if getent group -R "${ROOT}" "${grp}" >/dev/null 2>&1; then
+        chroot "${ROOT}" usermod -aG "${grp}" cosmic-greeter 2>/dev/null || true
+    fi
+done
 
 mkdir -p "${ROOT}/var/lib/cosmic-greeter" "${ROOT}/run/cosmic-greeter"
 cg_uid="$(chroot "${ROOT}" id -u cosmic-greeter 2>/dev/null || echo "")"

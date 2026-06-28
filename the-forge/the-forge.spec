@@ -1,6 +1,6 @@
 Name:           the-forge
 Version:        2.0.0
-Release:        7%{?dist}
+Release:        9%{?dist}
 Summary:        The Forge — Rust PID 1 init system
 
 License:        MIT
@@ -30,7 +30,7 @@ cargo build --locked --release --workspace
 install -d %{buildroot}%{_sbindir} %{buildroot}%{_bindir} %{buildroot}%{_libexecdir}
 install -d %{buildroot}%{_sysconfdir}/pam.d
 install -d %{buildroot}%{_sysconfdir}/forge/{units,systemd,backup}
-install -d %{buildroot}%{_libdir}/dracut/modules.d/90forge
+install -d %{buildroot}%{_prefix}/lib/dracut/modules.d/90forge
 install -d %{buildroot}%{_datadir}/forge/dbus-overrides
 install -d %{buildroot}%{_datadir}/forge
 install -d %{buildroot}%{_libexecdir}/forge
@@ -61,8 +61,8 @@ install -m 0644 forge-core/examples/network.toml %{buildroot}%{_sysconfdir}/forg
 install -m 0644 forge-core/examples/desktop.toml %{buildroot}%{_sysconfdir}/forge/desktop.toml
 cp -a forge-core/examples/units/. %{buildroot}%{_sysconfdir}/forge/units/
 cp -a forge-core/examples/systemd/. %{buildroot}%{_sysconfdir}/forge/systemd/
-install -m 0755 packaging/dracut/90forge/module-setup.sh %{buildroot}%{_libdir}/dracut/modules.d/90forge/
-install -m 0755 packaging/dracut/90forge/forge-cmdline.sh %{buildroot}%{_libdir}/dracut/modules.d/90forge/
+install -m 0755 packaging/dracut/90forge/module-setup.sh %{buildroot}%{_prefix}/lib/dracut/modules.d/90forge/
+install -m 0755 packaging/dracut/90forge/forge-cmdline.sh %{buildroot}%{_prefix}/lib/dracut/modules.d/90forge/
 
 %files
 %doc README.md NATIVE_MODE.md
@@ -85,7 +85,7 @@ install -m 0755 packaging/dracut/90forge/forge-cmdline.sh %{buildroot}%{_libdir}
 %{_sysconfdir}/forge/systemd/*
 %{_datadir}/forge/login-forge-snippet
 %{_datadir}/forge/dbus-overrides/*
-%{_libdir}/dracut/modules.d/90forge/*
+%{_prefix}/lib/dracut/modules.d/90forge/*
 
 %post
 install -d %{_sysconfdir}/dbus-1/system-services 2>/dev/null || true
@@ -97,6 +97,14 @@ install -m 0644 %{_datadir}/forge/dbus-overrides/session-org.freedesktop.systemd
   %{_datadir}/dbus-1/services/org.freedesktop.systemd1.service 2>/dev/null || true
 
 %changelog
+* Sat Jun 27 2026 Kenny Glowner <sisyphuscode@fedoraproject.org> - 2.0.0-9
+- Fix live graphical boot devpts handling and optional early-boot noise
+- Avoid subreaper ownership conflicts for graphical sessions
+
+* Sat Jun 27 2026 Kenny Glowner <sisyphuscode@fedoraproject.org> - 2.0.0-8
+- Fix compilation warnings (unused variables, dead code)
+- Add logind_command and agetty_command to service resolver
+
 * Fri Jun 26 2026 Kenny Glowner <sisyphuscode@fedoraproject.org> - 2.0.0-7
 - Use Python systemd1-stub for logind session scopes when installed
 - systemd1-stub forge unit owns org.freedesktop.systemd1 before logind

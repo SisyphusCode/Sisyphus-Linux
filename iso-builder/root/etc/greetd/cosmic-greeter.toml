@@ -2,8 +2,14 @@
 vt = "1"
 
 [general]
-service = "cosmic-greeter"
+service = "greetd"
+
+[initial_session]
+command = "start-cosmic"
+user = "sisyphus"
+service = "greetd"
 
 [default_session]
 command = "cosmic-greeter-start"
 user = "cosmic-greeter"
+service = "greetd-greeter"

@@ -28,6 +28,13 @@ DEFAULT_ENV = (
     "__GLX_VENDOR_LIBRARY_NAME=nvidia",
     "GBM_BACKEND=nvidia-drm",
 )
+DBUS_UNIX_FD = getattr(dbus, "UnixFd", None)
+
+
+def _is_unix_fd(value) -> bool:
+    if DBUS_UNIX_FD is not None and isinstance(value, DBUS_UNIX_FD):
+        return True
+    return hasattr(value, "take") and callable(getattr(value, "take", None))
 
 
 def _greeter_environment() -> list[str]:
@@ -79,6 +86,7 @@ class ForgeSystemd1(dbus.service.Object):
     def __init__(self, bus):
         self.bus = bus
         self._scopes: dict[str, ForgeScope] = {}
+        self._pid_units: dict[int, str] = {}
         reply = bus.request_name("org.freedesktop.systemd1", dbus.bus.NAME_FLAG_DO_NOT_QUEUE)
         if reply == dbus.bus.REQUEST_NAME_REPLY_EXISTS:
             _log("org.freedesktop.systemd1 already owned — exiting activation helper")
@@ -95,10 +103,10 @@ class ForgeSystemd1(dbus.service.Object):
     def StartUnit(self, name, mode):
         self._handle_unit(name)
         def emit_done():
-            self.JobRemoved(1, JOB_PATH, name, "done")
+            self.JobRemoved(dbus.UInt32(1), dbus.ObjectPath(JOB_PATH), name, "done")
             return False
         GLib.timeout_add(50, emit_done)
-        return JOB_PATH
+        return dbus.ObjectPath(JOB_PATH)
 
     @dbus.service.method(MANAGER_IFACE, in_signature="ssa(sv)a(sa(sv))", out_signature="o")
     def StartTransientUnit(self, name, mode, properties, aux):
@@ -107,10 +115,10 @@ class ForgeSystemd1(dbus.service.Object):
         else:
             self._handle_unit(name)
         def emit_done():
-            self.JobRemoved(1, JOB_PATH, name, "done")
+            self.JobRemoved(dbus.UInt32(1), dbus.ObjectPath(JOB_PATH), name, "done")
             return False
         GLib.timeout_add(50, emit_done)
-        return JOB_PATH
+        return dbus.ObjectPath(JOB_PATH)
 
     @dbus.service.method(MANAGER_IFACE, in_signature="ss", out_signature="o")
     def StopUnit(self, name, mode):
@@ -122,6 +130,10 @@ class ForgeSystemd1(dbus.service.Object):
 
     @dbus.service.method(MANAGER_IFACE, in_signature="u", out_signature="o")
     def GetUnitByPID(self, pid):
+        unit = self._unit_for_pid(int(pid))
+        if unit:
+            self._ensure_scope(unit)
+            return _unit_object_path(unit)
         return "/org/freedesktop/systemd1/unit/_forge_scope"
 
     @dbus.service.method(PROPERTIES_IFACE, in_signature="ss", out_signature="v")
@@ -159,14 +171,33 @@ class ForgeSystemd1(dbus.service.Object):
                 f"properties={properties!r} aux={aux!r}"
             )
             return
-        cgroup = f"/sys/fs/cgroup/{name}"
+        slice_name = _property_string(properties, "Slice") or "system.slice"
+        cgroup = os.path.join("/sys/fs/cgroup", _slice_cgroup_path(slice_name), name)
         try:
             os.makedirs(cgroup, exist_ok=True)
             with open(f"{cgroup}/cgroup.procs", "w", encoding="ascii") as fh:
                 fh.write(f"{leader}\n")
-            _log(f"{name}: attached leader pid {leader} to cgroup")
+            self._pid_units[leader] = name
+            _log(f"{name}: attached leader pid {leader} to cgroup {cgroup}")
         except OSError as exc:
             _log(f"{name}: cgroup attach failed for pid {leader}: {exc!r}")
+
+    def _unit_for_pid(self, pid: int) -> str | None:
+        mapped = self._pid_units.get(pid)
+        if mapped:
+            return mapped
+        try:
+            with open(f"/proc/{pid}/cgroup", encoding="ascii") as fh:
+                for line in fh:
+                    parts = line.strip().split(":", 2)
+                    if len(parts) != 3:
+                        continue
+                    for component in reversed(parts[2].split("/")):
+                        if component.startswith("session-") and component.endswith(".scope"):
+                            return component
+        except OSError:
+            return None
+        return None
 
     def _start_user_manager(self, uid: str) -> None:
         try:
@@ -267,6 +298,9 @@ class ForgeSystemd1(dbus.service.Object):
 def _dbus_scalar(value):
     if value is None:
         return None
+    if _is_unix_fd(value):
+        # Never coerce UnixFd through int() here; PIDFD ownership is handled explicitly.
+        return value
     if isinstance(value, (dbus.String, str)):
         return str(value)
     if isinstance(value, (dbus.Int32, dbus.Int64, dbus.UInt32, dbus.UInt64, int)):
@@ -281,14 +315,71 @@ def _dbus_scalar(value):
         return value
 
 
+def _pid_from_pidfd(value):
+    fd = None
+    try:
+        if _is_unix_fd(value):
+            fd = value.take()
+        else:
+            fd = int(value)
+    except (TypeError, ValueError, AttributeError):
+        return None
+
+    try:
+        with open(f"/proc/self/fdinfo/{fd}", encoding="utf-8") as fh:
+            for line in fh:
+                if line.startswith("Pid:"):
+                    return int(line.split(":", 1)[1].strip())
+    except (OSError, ValueError):
+        return None
+    finally:
+        if fd is not None:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+    return None
+
+
+def _property_string(properties, name: str) -> str | None:
+    for entry in properties or []:
+        if len(entry) < 2 or str(entry[0]) != name:
+            continue
+        value = _dbus_scalar(entry[1])
+        return str(value) if value not in (None, "") else None
+    return None
+
+
+def _slice_cgroup_path(slice_name: str) -> str:
+    if not slice_name.endswith(".slice"):
+        return slice_name
+    stem = slice_name[:-6]
+    if not stem:
+        return slice_name
+    parts = stem.split("-")
+    if len(parts) == 1:
+        return slice_name
+    return "/".join(f"{'-'.join(parts[:index])}.slice" for index in range(1, len(parts) + 1))
+
+
 def _leader_from_properties(properties):
     leader = None
     pids: list[int] = []
+    pidfds: list[int] = []
     for entry in properties or []:
         if len(entry) < 2:
             continue
         key = str(entry[0])
-        value = _dbus_scalar(entry[1])
+        raw_value = entry[1]
+        if key in ("PIDFDs", "PIDFD", "pidfds", "pidfd"):
+            fd_values = raw_value if isinstance(raw_value, (dbus.Array, list, tuple)) else [raw_value]
+            for fdv in fd_values:
+                pid = _pid_from_pidfd(fdv)
+                if pid is not None:
+                    pidfds.append(pid)
+            continue
+
+        value = _dbus_scalar(raw_value)
         if key in ("Leader", "MainPID", "main-pid"):
             try:
                 leader = int(value)
@@ -306,7 +397,7 @@ def _leader_from_properties(properties):
                     pids.append(int(value))
                 except (TypeError, ValueError):
                     pass
-    result = leader or (pids[0] if pids else None)
+    result = leader or (pidfds[0] if pidfds else None) or (pids[0] if pids else None)
     if result is None:
         _log(f"StartTransientUnit: no leader in properties={properties!r}")
     return result

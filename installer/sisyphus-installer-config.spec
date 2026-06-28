@@ -1,6 +1,6 @@
 Name:           sisyphus-installer-config
 Version:        1.0.0
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Calamares configuration and branding for Sisyphus Linux
 License:        GPLv3
 URL:            https://github.com/SisyphusCode/Sisyphus-Linux
@@ -39,17 +39,24 @@ mkdir -p %{buildroot}/etc/calamares/
 mkdir -p %{buildroot}/usr/share/calamares/branding/sisyphus/
 
 install -p -m 644 installer/settings.conf %{buildroot}/etc/calamares/
+cp -a installer/modules %{buildroot}/etc/calamares/
 install -p -m 644 installer/branding/sisyphus/branding.desc %{buildroot}/usr/share/calamares/branding/sisyphus/
 install -p -m 644 installer/branding/sisyphus/logo.png %{buildroot}/usr/share/calamares/branding/sisyphus/
+install -p -m 644 installer/branding/sisyphus/show.qml %{buildroot}/usr/share/calamares/branding/sisyphus/
 
 %files
 %defattr(-,root,root,-)
 %dir /usr/share/calamares/branding/sisyphus
 /etc/calamares/settings.conf
+/etc/calamares/modules
 /usr/share/calamares/branding/sisyphus/branding.desc
 /usr/share/calamares/branding/sisyphus/logo.png
+/usr/share/calamares/branding/sisyphus/show.qml
 
 %changelog
+* Sat Jun 27 2026 Kenny Glowner <sisyphuscode@fedoraproject.org> - 1.0.0-3
+- Ship complete Calamares module config and slideshow branding
+
 * Sat Jun 27 2026 Kenny Glowner <sisyphuscode@fedoraproject.org> - 1.0.0-2
 - Add installer-enabled flag for live USB Calamares auto-launch
 

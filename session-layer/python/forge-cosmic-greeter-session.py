@@ -2,6 +2,7 @@
 """Launch cosmic-greeter with a proper logind session under Forge PID 1."""
 import os
 import sys
+import threading
 import time
 
 try:
@@ -12,7 +13,8 @@ except ImportError:
 
 def _log(msg: str) -> None:
     try:
-        with open("/var/log/forge/cosmic-greeter.log", "a", encoding="utf-8") as fh:
+        os.makedirs("/var/lib/forge", exist_ok=True)
+        with open("/var/lib/forge/cosmic-greeter.log", "a", encoding="utf-8") as fh:
             fh.write(msg + "\n")
     except OSError:
         pass
@@ -42,6 +44,29 @@ def _terminate_stale_sessions(iface, user: str) -> None:
             _log(f"terminated stale {user} session {sid}")
         except Exception as exc:  # noqa: BLE001
             _log(f"TerminateSession {sid}: {exc!r}")
+
+
+def _find_existing_session(iface, user: str, seat: str = "seat0") -> str | None:
+    for entry in iface.ListSessions():
+        if len(entry) < 4:
+            continue
+        sid, _uid, uname, sess_seat = entry[0], entry[1], entry[2], entry[3]
+        if str(uname) != user:
+            continue
+        if seat and str(sess_seat) not in (seat, ""):
+            continue
+        return str(sid)
+    return None
+
+
+def _recover_session_after_create_failure(iface, user: str, seat: str = "seat0") -> str | None:
+    """logind may create the session but miss the D-Bus reply when systemd1 is busy."""
+    for _ in range(100):
+        sid = _find_existing_session(iface, user, seat)
+        if sid:
+            return sid
+        time.sleep(0.1)
+    return None
 
 
 def _session_env(runtime: str, bus_addr: str, vtnr: int, pw_dir: str) -> dict[str, str]:
@@ -137,8 +162,9 @@ def main() -> int:
     child = os.fork()
     if child == 0:
         os.close(sync_w)
-        os.read(sync_r, 1)
+        session_id_bytes = os.read(sync_r, 64)
         os.close(sync_r)
+        session_id = session_id_bytes.decode("utf-8").strip("\0")
         os.setsid()
         os.setgid(pw.pw_gid)
         os.initgroups(user, pw.pw_gid)
@@ -163,6 +189,7 @@ def main() -> int:
         env["PATH"] = os.environ.get("PATH", "/usr/bin:/bin")
         env["LANG"] = os.environ.get("LANG", "en_US.UTF-8")
         env["LC_ALL"] = os.environ.get("LC_ALL", env["LANG"])
+        env["XDG_SESSION_ID"] = session_id
         os.execvpe("/usr/bin/cosmic-greeter-start", ["/usr/bin/cosmic-greeter-start"], env)
         os._exit(127)
 
@@ -171,34 +198,64 @@ def main() -> int:
         return 1
 
     os.close(sync_r)
-    try:
-        result = logind.CreateSession(
-            dbus.UInt32(uid),
-            dbus.UInt32(child),
-            "cosmic-greeter",
-            "wayland",
-            "greeter",
-            "COSMIC",
-            "seat0",
-            dbus.UInt32(vtnr),
-            tty,
-            "",
-            dbus.Boolean(False),
-            "",
-            "",
-            dbus.Array([], signature="(sv)"),
-        )
-        session_id = str(result[0])
-        _log(
-            f"CreateSession ok user={user} leader={child} id={session_id} runtime={runtime}"
-        )
+    session_id = None
+    create_exc = None
+    create_result: dict[str, object] = {}
+
+    def _create_session_worker() -> None:
         try:
-            logind.ActivateSession(session_id)
-            logind.ActivateSessionOnSeat(session_id, "seat0")
-        except dbus.exceptions.DBusException as exc:
-            _log(f"ActivateSession {session_id}: {exc!r}")
-    except Exception as exc:  # noqa: BLE001
-        _log(f"CreateSession failed user={user}: {exc!r}")
+            result = logind.CreateSession(
+                dbus.UInt32(uid),
+                dbus.UInt32(child),
+                "cosmic-greeter",
+                "wayland",
+                "greeter",
+                "COSMIC",
+                "seat0",
+                dbus.UInt32(vtnr),
+                tty,
+                "",
+                dbus.Boolean(False),
+                "",
+                "",
+                dbus.Array([], signature="(sv)"),
+            )
+            create_result["sid"] = str(result[0])
+        except Exception as exc:  # noqa: BLE001
+            create_result["exc"] = exc
+
+    threading.Thread(target=_create_session_worker, daemon=True).start()
+    for _ in range(150):
+        if create_result.get("sid"):
+            session_id = str(create_result["sid"])
+            _log(
+                f"CreateSession ok user={user} leader={child} "
+                f"id={session_id} runtime={runtime}"
+            )
+            break
+        sid = _find_existing_session(logind, user)
+        if sid:
+            session_id = sid
+            create_exc = create_result.get("exc")
+            _log(
+                f"CreateSession recovered existing session {session_id} "
+                f"leader={child} err={create_exc!r}"
+            )
+            break
+        time.sleep(0.2)
+
+    if session_id is None:
+        create_exc = create_result.get("exc")
+        if create_exc:
+            _log(f"CreateSession failed user={user}: {create_exc!r}")
+        session_id = _recover_session_after_create_failure(logind, user)
+        if session_id:
+            _log(
+                f"CreateSession recovered existing session {session_id} "
+                f"after failure leader={child} err={create_exc!r}"
+            )
+
+    if session_id is None:
         try:
             os.kill(child, 15)
         except OSError:
@@ -207,12 +264,18 @@ def main() -> int:
         if os.WIFEXITED(status):
             return os.WEXITSTATUS(status)
         return 1
-    finally:
-        try:
-            os.write(sync_w, b"\0")
-        except OSError:
-            pass
-        os.close(sync_w)
+
+    try:
+        logind.ActivateSession(session_id)
+        logind.ActivateSessionOnSeat(session_id, "seat0")
+    except dbus.exceptions.DBusException as exc:
+        _log(f"ActivateSession {session_id}: {exc!r}")
+
+    try:
+        os.write(sync_w, session_id.encode("utf-8") + b"\0")
+    except OSError:
+        pass
+    os.close(sync_w)
 
     if os.path.exists(tty):
         os.system(f"chvt {vtnr} >/dev/null 2>&1")

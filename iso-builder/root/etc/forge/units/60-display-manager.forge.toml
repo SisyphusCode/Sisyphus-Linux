@@ -1,17 +1,21 @@
 [service]
 name = "display-manager"
-description = "COSMIC greeter display manager"
+description = "greetd COSMIC display manager"
 exec-start-pre = "/usr/libexec/forge/desktop-ready.sh"
-exec = "/usr/libexec/forge/start-cosmic-greeter.sh"
-args = []
+exec = "/usr/bin/greetd"
+args = ["-c", "/etc/greetd/cosmic-greeter.toml"]
 type = "simple"
+requires = ["seatd", "localed-stub", "cosmic-greeter-daemon"]
 after = [
     "multi-user",
     "dbus",
     "udev",
     "udev-settle",
     "logind",
+    "localed-stub",
     "polkit",
+    "seatd",
+    "cosmic-greeter-daemon",
     "user-sessions",
     "accounts-daemon",
     "network-setup",

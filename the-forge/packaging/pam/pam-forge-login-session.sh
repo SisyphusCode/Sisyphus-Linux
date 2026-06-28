@@ -23,7 +23,7 @@ fi
 # pam_selinux.so open needs a logind session — pam_systemd is a no-op under forge PID 1.
 if command -v python3 >/dev/null 2>&1; then
   PAM_USER="$user" PAM_UID="$uid" PAM_SERVICE="${PAM_SERVICE:-login}" PAM_TTY="${PAM_TTY:-}" \
-    python3 /usr/libexec/forge/pam-logind-create-session.py || true
+    python3 /usr/libexec/forge/pam-logind-create-session.py >/dev/null 2>&1 || true
 fi
 
 exit 0

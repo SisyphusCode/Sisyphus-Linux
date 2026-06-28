@@ -31,6 +31,17 @@ if ! getent passwd gdm >/dev/null 2>&1; then
     mkdir -p /var/lib/gdm
     chown gdm:gdm /var/lib/gdm
 fi
+if ! getent group seat >/dev/null 2>&1; then
+    groupadd -r seat
+fi
+
+if getent passwd sisyphus >/dev/null 2>&1; then
+    for grp in video render input seat; do
+        if getent group "$grp" >/dev/null 2>&1; then
+            usermod -aG "$grp" sisyphus 2>/dev/null || true
+        fi
+    done
+fi
 
 # systemd-sysusers does not run under Forge — create COSMIC greeter account manually
 if ! getent passwd cosmic-greeter >/dev/null 2>&1; then
@@ -57,14 +68,18 @@ fi
 # Ensure forge helper scripts are executable
 chmod 0755 /usr/libexec/forge/init-machine-id.sh 2>/dev/null || true
 chmod 0755 /usr/bin/cosmic-greeter-start 2>/dev/null || true
+chmod 0755 /usr/bin/start-cosmic 2>/dev/null || true
 chmod 0755 /usr/libexec/forge/start-cosmic-greeter.sh 2>/dev/null || true
 chmod 0755 /usr/libexec/forge/pam-forge-login-session.sh 2>/dev/null || true
 chmod 0755 /usr/libexec/forge/pam-logind-create-session.py 2>/dev/null || true
 chmod 0755 /usr/libexec/forge/forge-cosmic-greeter-session.py 2>/dev/null || true
+chmod 0755 /usr/libexec/forge/forge-greetd-ipc.py 2>/dev/null || true
+chmod 0755 /usr/libexec/forge/localed-stub.py 2>/dev/null || true
 chmod 0755 /usr/libexec/forge/cosmic-greeter-setup.sh 2>/dev/null || true
 chmod 0755 /usr/libexec/forge/desktop-ready.sh 2>/dev/null || true
 chmod 0755 /usr/libexec/forge/*.sh 2>/dev/null || true
 chmod 0755 /usr/libexec/sisyphus/*.sh 2>/dev/null || true
+chmod 0755 /usr/lib/systemd/system-generators/dracut-kiwi-generator 2>/dev/null || true
 
 # Enable Calamares native installer on overlayroot live media (Kiwi OEM).
 mkdir -p /etc/sisyphus
@@ -86,8 +101,9 @@ systemctl mask getty-pre.target 2>/dev/null || \
 # Boot to graphical target with COSMIC greeter stack.
 echo graphical > /etc/forge/default.target
 if command -v forgectl >/dev/null 2>&1; then
-    for svc in dbus udev logind polkit accounts-daemon network-setup \
-               network-manager user-sessions display-manager sisyphus-installer; do
+    for svc in dbus udev logind localed-stub polkit accounts-daemon network-setup \
+               network-manager user-sessions seatd cosmic-greeter-daemon display-manager \
+               sisyphus-installer; do
         forgectl enable "$svc" 2>/dev/null || true
     done
 fi
@@ -96,6 +112,18 @@ fi
 if command -v rpm >/dev/null 2>&1; then
     rpm --import https://download.copr.fedorainfracloud.org/results/sisyphuscode/the-forge/pubkey.gpg 2>/dev/null || true
     rpm --import https://download.copr.fedorainfracloud.org/results/sisyphuscode/tuned-rs/pubkey.gpg 2>/dev/null || true
+fi
+
+# KIWI's overlay generator can be rerun after dracut has converted the shell
+# root variable to block:/dev/..., so make it key off the original cmdline and
+# keep generator execution side-effect free. Also load overlayfs before sysroot.
+if [[ -d /usr/lib/dracut/modules.d/55kiwi-overlay ]]; then
+    install -m 0755 /usr/lib/systemd/system-generators/dracut-kiwi-generator \
+        /usr/lib/dracut/modules.d/55kiwi-overlay/kiwi-generator.sh
+    if ! grep -q 'modprobe overlay' /usr/lib/dracut/modules.d/55kiwi-overlay/kiwi-overlay-root.sh; then
+        sed -i '/modprobe squashfs/a\    modprobe overlay' \
+            /usr/lib/dracut/modules.d/55kiwi-overlay/kiwi-overlay-root.sh
+    fi
 fi
 
 # Rebuild initramfs with the Forge dracut module
@@ -147,22 +175,38 @@ EOF
 cat > /etc/forge/units/60-display-manager.forge.toml <<'EOF'
 [service]
 name = "display-manager"
-description = "COSMIC greeter display manager"
+description = "greetd COSMIC display manager"
 exec-start-pre = "/usr/libexec/forge/desktop-ready.sh"
-exec = "/usr/libexec/forge/start-cosmic-greeter.sh"
-args = []
+exec = "/usr/bin/greetd"
+args = ["-c", "/etc/greetd/cosmic-greeter.toml"]
 type = "simple"
+requires = ["seatd", "localed-stub", "cosmic-greeter-daemon"]
 after = [
     "multi-user",
     "dbus",
     "udev",
     "udev-settle",
     "logind",
+    "localed-stub",
     "polkit",
+    "seatd",
+    "cosmic-greeter-daemon",
     "user-sessions",
     "accounts-daemon",
     "network-setup",
 ]
+restart = "on-failure"
+EOF
+
+cat > /etc/forge/units/54-localed-stub.forge.toml <<'EOF'
+[service]
+name = "localed-stub"
+description = "Minimal org.freedesktop.locale1 provider"
+exec = "/usr/libexec/forge/localed-stub.py"
+args = []
+type = "dbus"
+bus-name = "org.freedesktop.locale1"
+after = ["dbus"]
 restart = "on-failure"
 EOF
 
@@ -173,6 +217,29 @@ exec = "/usr/libexec/forge/systemd1-stub-wrapper.sh"
 args = []
 type = "dbus"
 bus-name = "org.freedesktop.systemd1"
+after = ["dbus"]
+restart = "on-failure"
+EOF
+
+cat > /etc/forge/units/56-seatd.forge.toml <<'EOF'
+[service]
+name = "seatd"
+description = "Seat management daemon"
+exec = "/usr/bin/seatd"
+args = ["-g", "seat"]
+type = "simple"
+after = ["forge-early", "udev", "udev-settle"]
+restart = "on-failure"
+EOF
+
+cat > /etc/forge/units/57-cosmic-greeter-daemon.forge.toml <<'EOF'
+[service]
+name = "cosmic-greeter-daemon"
+description = "COSMIC greeter system daemon"
+exec = "/usr/bin/cosmic-greeter-daemon"
+args = []
+type = "dbus"
+bus-name = "com.system76.CosmicGreeter"
 after = ["dbus"]
 restart = "on-failure"
 EOF

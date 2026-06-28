@@ -1,5 +1,5 @@
 #%PAM-1.0
-# greetd greeter session — pam_systemd when systemd is PID 1, forge pam_exec fallback.
+# Minimal non-interactive greeter session stack for Forge PID 1.
 
 auth            required pam_env.so
 auth            required pam_permit.so
@@ -9,5 +9,4 @@ account         required pam_permit.so
 password        required pam_deny.so
 
 session         required pam_unix.so
-session         optional pam_exec.so stdout /usr/libexec/forge/pam-forge-login-session.sh
-session         optional pam_systemd.so
+session         optional pam_exec.so /usr/libexec/forge/pam-forge-login-session.sh

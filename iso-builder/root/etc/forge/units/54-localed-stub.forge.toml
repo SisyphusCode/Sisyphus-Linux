@@ -1,0 +1,9 @@
+[service]
+name = "localed-stub"
+description = "Minimal org.freedesktop.locale1 provider"
+exec = "/usr/libexec/forge/localed-stub.py"
+args = []
+type = "dbus"
+bus-name = "org.freedesktop.locale1"
+after = ["dbus"]
+restart = "on-failure"

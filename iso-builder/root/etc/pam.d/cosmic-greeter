@@ -1,25 +1,12 @@
 #%PAM-1.0
-# Forge PID 1: pam_systemd is a no-op — logind session + runtime dir via pam_exec stdout.
-auth       substack    system-auth
--auth       optional    pam_gnome_keyring.so
--auth       optional    pam_kwallet5.so
--auth       optional    pam_kwallet.so
-auth       include     postlogin
+# Minimal non-interactive greeter session stack for Forge PID 1.
 
-account    required    pam_sepermit.so
-account    required    pam_nologin.so
-account    include     system-auth
+auth            required pam_env.so
+auth            required pam_permit.so
 
-password   include     system-auth
+account         required pam_permit.so
 
-session    required    pam_selinux.so close
-session    required    pam_loginuid.so
-session    optional    pam_exec.so stdout /usr/libexec/forge/pam-forge-login-session.sh
-session    required    pam_selinux.so open
-session    optional    pam_keyinit.so force revoke
--session    required    pam_namespace.so
-session    include     system-auth
--session    optional    pam_gnome_keyring.so auto_start
--session    optional    pam_kwallet5.so auto_start
--session    optional    pam_kwallet.so auto_start
-session    include     postlogin
+password        required pam_deny.so
+
+session         required pam_unix.so
+session         optional pam_exec.so /usr/libexec/forge/pam-forge-login-session.sh

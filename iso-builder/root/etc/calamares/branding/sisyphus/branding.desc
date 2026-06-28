@@ -1,14 +1,10 @@
 ---
-componentName: Sisyphus Linux
-shortProductName: Sisyphus
-version: "0.1.0"
-shortVersion: "0.1.0"
-versioned: false
-slideshow: show.qml
-stylesheet: stylesheet.qss
-
-welcomeStyleCalamares: true
-welcomeExpandingLogo: true
+componentName: sisyphus
+windowExpanding: normal
+windowSize: 800px,520px
+windowPlacement: center
+sidebar: widget,left
+navigation: widget,bottom
 
 strings:
     productName: Sisyphus Linux
@@ -21,3 +17,24 @@ strings:
     knownIssuesUrl: ""
     releaseNotesUrl: ""
     donateUrl: ""
+
+images:
+    productLogo: "logo.png"
+    productIcon: "logo.png"
+    productWelcome: "logo.png"
+
+style:
+    SidebarBackground: "#1e1e1e"
+    SidebarText: "#ffffff"
+    SidebarTextCurrent: "#ffffff"
+    SidebarBackgroundCurrent: "#333333"
+
+welcomeStyleCalamares: true
+welcomeExpandingLogo: true
+slideshow: show.qml
+slideshowAPI: 2
+
+uploadServer:
+    type: none
+    url: ""
+    sizeLimit: -1

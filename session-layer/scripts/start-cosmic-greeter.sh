@@ -2,22 +2,59 @@
 # Launch COSMIC greeter with explicit logind session (Forge — no greetd/pam_systemd).
 set -euo pipefail
 
-LOG=/var/log/forge/cosmic-greeter.log
-mkdir -p /var/log/forge /run/cosmic-greeter
+LOG=/var/lib/forge/cosmic-greeter.log
+mkdir -p "$(dirname "$LOG")" /run/cosmic-greeter
 exec >>"$LOG" 2>&1
 echo "=== $(date -Is 2>/dev/null || date) start-cosmic-greeter ==="
+echo "DEBUG: Checking if cosmic-greeter user exists..."
+if getent passwd cosmic-greeter >/dev/null 2>&1; then
+    echo "DEBUG: cosmic-greeter user exists"
+else
+    echo "DEBUG: ERROR - cosmic-greeter user does NOT exist"
+fi
+echo "DEBUG: Checking for cosmic-comp..."
+if command -v cosmic-comp >/dev/null 2>&1; then
+    echo "DEBUG: cosmic-comp found at $(command -v cosmic-comp)"
+else
+    echo "DEBUG: ERROR - cosmic-comp NOT found"
+fi
+echo "DEBUG: Checking for cosmic-greeter..."
+if command -v cosmic-greeter >/dev/null 2>&1; then
+    echo "DEBUG: cosmic-greeter found at $(command -v cosmic-greeter)"
+else
+    echo "DEBUG: ERROR - cosmic-greeter NOT found"
+fi
+echo "DEBUG: Checking for pop-sound-theme..."
+if rpm -q pop-sound-theme >/dev/null 2>&1; then
+    echo "DEBUG: pop-sound-theme is installed"
+else
+    echo "DEBUG: ERROR - pop-sound-theme is NOT installed"
+fi
 
 BUS="${DBUS_SYSTEM_BUS_ADDRESS:-unix:path=/run/dbus/system_bus_socket}"
-for _ in $(seq 1 200); do
+
+dbus_name_owned() {
+    local name="$1"
+    if command -v busctl >/dev/null 2>&1; then
+        busctl --address="$BUS" call org.freedesktop.DBus /org/freedesktop/DBus \
+            org.freedesktop.DBus NameHasOwner s "$name" 2>/dev/null | grep -q 'true'
+        return $?
+    fi
+    dbus-send --address="$BUS" --dest=org.freedesktop.DBus --print-reply \
+        /org/freedesktop/DBus org.freedesktop.DBus.NameHasOwner "string:$name" 2>/dev/null \
+        | grep -q 'boolean true'
+}
+
+for _ in $(seq 1 50); do
     [[ -S /run/dbus/system_bus_socket ]] && break
     sleep 0.1
 done
-for _ in $(seq 1 100); do
-    busctl --address="$BUS" status org.freedesktop.login1 >/dev/null 2>&1 && break
+for _ in $(seq 1 50); do
+    dbus_name_owned org.freedesktop.login1 && break
     sleep 0.1
 done
-for _ in $(seq 1 100); do
-    busctl --address="$BUS" status org.freedesktop.systemd1 >/dev/null 2>&1 && break
+for _ in $(seq 1 50); do
+    dbus_name_owned org.freedesktop.systemd1 && break
     sleep 0.1
 done
 
@@ -46,19 +83,20 @@ prepare_cosmic_greeter_dirs() {
     if [[ -d "${shortcuts_share}" ]]; then
         cp -af "${shortcuts_share}/." "${shortcuts_cfg}/" 2>/dev/null || true
     fi
-    chown -R cosmic-greeter:cosmic-greeter /var/lib/cosmic-greeter /run/cosmic-greeter "/run/user/${cg_uid}"
+    chown -R cosmic-greeter:cosmic-greeter /var/lib/cosmic-greeter /run/cosmic-greeter
+    chown cosmic-greeter:cosmic-greeter "/run/user/${cg_uid}"
     chmod 0755 /var/lib/cosmic-greeter
     chmod 0755 /run/cosmic-greeter
     chmod 0700 "/run/user/${cg_uid}"
-    touch /var/log/forge/cosmic-greeter-session.log
-    chown cosmic-greeter:cosmic-greeter /var/log/forge/cosmic-greeter-session.log
-    chmod 0644 /var/log/forge/cosmic-greeter-session.log
+    touch /var/lib/forge/cosmic-greeter-session.log
+    chown cosmic-greeter:cosmic-greeter /var/lib/forge/cosmic-greeter-session.log
+    chmod 0644 /var/lib/forge/cosmic-greeter-session.log
 
     # Extra guarantee: make dri devices accessible to the greeter (in case udev/early ACLs missed in this boot)
     for dri in /dev/dri/card* /dev/dri/renderD*; do
         [[ -e "$dri" ]] || continue
         chgrp video "$dri" 2>/dev/null || true
-        chmod 0660 "$dri" 2>/dev/null || true
+        chmod 0666 "$dri" 2>/dev/null || true
         setfacl -m "u:cosmic-greeter:rw" "$dri" 2>/dev/null || true
     done
 
@@ -87,24 +125,12 @@ if getent passwd cosmic-greeter >/dev/null 2>&1; then
         [[ -S "${CG_RUNTIME}/bus" ]] && break
         sleep 0.1
     done
-
-    greeter_env=(
-        "HOME=/var/lib/cosmic-greeter"
-        "XDG_CONFIG_HOME=/var/lib/cosmic-greeter/.config"
-        "XDG_STATE_HOME=/var/lib/cosmic-greeter/.local/state"
-        "XDG_DATA_HOME=/var/lib/cosmic-greeter/.local/share"
-        "XDG_RUNTIME_DIR=${CG_RUNTIME}"
-        "DBUS_SESSION_BUS_ADDRESS=${CG_BUS}"
-    )
-
-    if command -v cosmic-settings-daemon >/dev/null 2>&1; then
-        if ! busctl --address="$BUS" status com.system76.CosmicSettingsDaemon >/dev/null 2>&1; then
-            runuser -u cosmic-greeter -- env "${greeter_env[@]}" \
-                /usr/bin/cosmic-settings-daemon >>"$LOG" 2>&1 &
-            sleep 0.5
-            chown -R cosmic-greeter:cosmic-greeter /run/cosmic-greeter/cosmic 2>/dev/null || true
-        fi
-    fi
+    for _ in $(seq 1 50); do
+        busctl --address="$CG_BUS" call org.freedesktop.DBus /org/freedesktop/DBus \
+            org.freedesktop.DBus NameHasOwner s org.freedesktop.systemd1 2>/dev/null \
+            | grep -q 'true' && break
+        sleep 0.1
+    done
 
     if command -v cosmic-greeter-daemon >/dev/null 2>&1; then
         if ! busctl --address="$BUS" status com.system76.CosmicGreeter >/dev/null 2>&1; then
@@ -127,4 +153,22 @@ if getent passwd cosmic-greeter >/dev/null 2>&1; then
     fi
 fi
 
+# Optional VM fallback: run greeter directly as root when explicitly requested.
+if command -v systemd-detect-virt >/dev/null 2>&1 \
+    && systemd-detect-virt --quiet \
+    && [[ "${SISYPHUS_VM_ROOT_GREETER:-0}" == "1" ]]; then
+    echo "start-cosmic-greeter: virtualized boot detected; root greeter fallback enabled" >>"$LOG"
+    export LIBSEAT_BACKEND=builtin
+    export WLR_RENDERER="${WLR_RENDERER:-pixman}"
+    if [[ -z "${WLR_DRM_DEVICES:-}" ]]; then
+        for card in /dev/dri/card[0-9]*; do
+            [[ -c "$card" ]] || continue
+            export WLR_DRM_DEVICES="$card"
+            break
+        done
+    fi
+    exec /usr/bin/cosmic-greeter-start
+fi
+
+# Forge logind session + cosmic-comp; cosmic-greeter-start provides the local greetd IPC shim.
 exec python3 /usr/libexec/forge/forge-cosmic-greeter-session.py

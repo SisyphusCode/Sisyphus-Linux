@@ -1,0 +1,8 @@
+[service]
+name = "seatd"
+description = "Seat management daemon"
+exec = "/usr/bin/seatd"
+args = ["-g", "seat"]
+type = "simple"
+after = ["forge-early", "udev", "udev-settle"]
+restart = "on-failure"

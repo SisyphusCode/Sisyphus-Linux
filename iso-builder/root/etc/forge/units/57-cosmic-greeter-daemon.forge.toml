@@ -1,0 +1,9 @@
+[service]
+name = "cosmic-greeter-daemon"
+description = "COSMIC greeter system daemon"
+exec = "/usr/bin/cosmic-greeter-daemon"
+args = []
+type = "dbus"
+bus-name = "com.system76.CosmicGreeter"
+after = ["dbus"]
+restart = "on-failure"

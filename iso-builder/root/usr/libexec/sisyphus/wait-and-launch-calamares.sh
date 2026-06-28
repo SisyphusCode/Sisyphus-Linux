@@ -2,8 +2,8 @@
 # Wait for overlayroot + Wayland, then start Calamares on live installer media.
 set -euo pipefail
 
-LOG=/var/log/forge/sisyphus-installer.log
-mkdir -p /var/log/forge
+LOG=/var/lib/forge/sisyphus-installer.log
+mkdir -p "$(dirname "$LOG")"
 
 # Never block graphical.target boot — Wayland may take a minute to appear.
 if [[ "${SISYPHUS_INSTALLER_BG:-}" != 1 ]]; then
@@ -19,6 +19,36 @@ echo "=== $(date -Is 2>/dev/null || date) wait-and-launch-calamares pid=$$ ==="
 
 [[ -f /etc/sisyphus/installer-enabled ]] || exit 0
 
+socket_is_live() {
+    local socket="$1"
+    python3 - "$socket" <<'PY'
+import socket as s, sys
+path = sys.argv[1]
+sock = s.socket(s.AF_UNIX, s.SOCK_STREAM)
+sock.settimeout(0.5)
+try:
+    sock.connect(path)
+except OSError:
+    sys.exit(1)
+else:
+    sys.exit(0)
+finally:
+    sock.close()
+PY
+}
+
+socket_stays_live() {
+    local socket="$1"
+    for _ in $(seq 1 12); do
+        socket_is_live "${socket}" || return 1
+        sleep 1
+    done
+}
+
+compositor_is_alive() {
+    pgrep -x cosmic-comp >/dev/null 2>&1
+}
+
 for _ in $(seq 1 30); do
     if findmnt -rn -T /run/overlay/rootfsbase >/dev/null 2>&1 \
         || findmnt -rn -T /run/rootfsbase >/dev/null 2>&1 \
@@ -31,11 +61,16 @@ done
 for i in $(seq 1 600); do
     for socket in /run/user/*/wayland-*; do
         [[ -S "${socket}" ]] || continue
+        if ! socket_stays_live "${socket}" || ! compositor_is_alive; then
+            continue
+        fi
         export XDG_RUNTIME_DIR
         XDG_RUNTIME_DIR="$(dirname "${socket}")"
         export WAYLAND_DISPLAY="wayland-${socket##*-}"
-        echo "Wayland socket found: $socket (XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR WAYLAND_DISPLAY=$WAYLAND_DISPLAY)"
+        socket_is_live "${socket}" && compositor_is_alive || continue
+        echo "Wayland compositor reachable: $socket (XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR WAYLAND_DISPLAY=$WAYLAND_DISPLAY)"
         sleep 3
+        socket_is_live "${socket}" && compositor_is_alive || continue
         /usr/libexec/sisyphus/launch-calamares.sh
         exit 0
     done

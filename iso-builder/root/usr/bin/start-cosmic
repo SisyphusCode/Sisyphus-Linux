@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Minimal COSMIC session launcher until cosmic-session can coexist with tuned-rs.
+set -euo pipefail
+
+uid="$(id -u)"
+runtime="${XDG_RUNTIME_DIR:-/run/user/${uid}}"
+export XDG_RUNTIME_DIR="$runtime"
+export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=${runtime}/bus}"
+export XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP:-COSMIC}"
+export XDG_SESSION_DESKTOP="${XDG_SESSION_DESKTOP:-COSMIC}"
+export XDG_SESSION_TYPE="${XDG_SESSION_TYPE:-wayland}"
+export LIBSEAT_BACKEND="${LIBSEAT_BACKEND:-seatd}"
+export SEATD_SOCK="${SEATD_SOCK:-/run/seatd.sock}"
+
+if [[ -r /run/cosmic-greeter/environment ]]; then
+    while IFS='=' read -r key value; do
+        [[ -n "$key" && "$key" != \#* ]] || continue
+        case "$key" in
+            WLR_DRM_DEVICES|WLR_NO_HARDWARE_CURSORS|WLR_RENDERER|LIBSEAT_BACKEND|SEATD_SOCK)
+                export "$key=$value"
+                ;;
+        esac
+    done < /run/cosmic-greeter/environment
+fi
+
+mkdir -p "$runtime" "${HOME:-/tmp}/.local/state" 2>/dev/null || true
+chmod 0700 "$runtime" 2>/dev/null || true
+
+log_dir="${HOME:-/tmp}/.local/state"
+log="${log_dir}/start-cosmic.log"
+exec >>"$log" 2>&1
+echo "=== $(date -Is 2>/dev/null || date) start-cosmic uid=${uid} runtime=${XDG_RUNTIME_DIR} bus=${DBUS_SESSION_BUS_ADDRESS} ==="
+
+if [[ ! -S "${runtime}/bus" ]] && command -v dbus-daemon >/dev/null 2>&1; then
+    dbus-daemon --session --address="unix:path=${runtime}/bus" --nopidfile --fork >/dev/null 2>&1 || true
+fi
+
+if command -v cosmic-session >/dev/null 2>&1; then
+    exec cosmic-session "$@"
+fi
+
+for daemon in cosmic-settings-daemon cosmic-bg cosmic-panel cosmic-workspaces cosmic-notifications cosmic-osd cosmic-idle; do
+    if command -v "${daemon}" >/dev/null 2>&1; then
+        "${daemon}" >>"${log_dir}/${daemon}.log" 2>&1 &
+    fi
+done
+
+exec cosmic-comp

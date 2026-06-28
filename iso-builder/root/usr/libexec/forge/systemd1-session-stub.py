@@ -52,18 +52,18 @@ class ForgeSessionSystemd1(dbus.service.Object):
     @dbus.service.method(MANAGER_IFACE, in_signature="ss", out_signature="o")
     def StartUnit(self, name, mode):
         def emit_done():
-            self.JobRemoved(1, JOB_PATH, name, "done")
+            self.JobRemoved(dbus.UInt32(1), dbus.ObjectPath(JOB_PATH), name, "done")
             return False
         GLib.timeout_add(50, emit_done)
-        return JOB_PATH
+        return dbus.ObjectPath(JOB_PATH)
 
     @dbus.service.method(MANAGER_IFACE, in_signature="ssa(sv)a(sa(sv))", out_signature="o")
     def StartTransientUnit(self, name, mode, properties, aux):
         def emit_done():
-            self.JobRemoved(1, JOB_PATH, name, "done")
+            self.JobRemoved(dbus.UInt32(1), dbus.ObjectPath(JOB_PATH), name, "done")
             return False
         GLib.timeout_add(50, emit_done)
-        return JOB_PATH
+        return dbus.ObjectPath(JOB_PATH)
 
     @dbus.service.method(MANAGER_IFACE, in_signature="ss", out_signature="o")
     def StopUnit(self, name, mode):
