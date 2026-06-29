@@ -69,8 +69,10 @@ echo "1.0" > /etc/skel/.config/cosmic/com.system76.CosmicTerm/v1/opacity
 if [ -d /home/sisyphus ]; then
     mkdir -p /home/sisyphus/.config/cosmic/com.system76.CosmicTerm/v1
     echo "1.0" > /home/sisyphus/.config/cosmic/com.system76.CosmicTerm/v1/opacity
-    if getent passwd sisyphus >/dev/null 2>&1; then
-        chown -R sisyphus:sisyphus /home/sisyphus/.config
+    if id sisyphus >/dev/null 2>&1; then
+        SISYPHUS_UID=$(id -u sisyphus)
+        SISYPHUS_GID=$(id -g sisyphus)
+        chown -R ${SISYPHUS_UID}:${SISYPHUS_GID} /home/sisyphus/.config
     fi
 fi
 if command -v systemd-tmpfiles >/dev/null 2>&1; then
