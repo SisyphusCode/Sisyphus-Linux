@@ -62,6 +62,13 @@ for id in com.system76.CosmicComp com.system76.CosmicSettings.Shortcuts com.syst
     mkdir -p "/var/lib/cosmic-greeter/.config/cosmic/${id}/v1"
 done
 chown -R cosmic-greeter:cosmic-greeter /var/lib/cosmic-greeter
+
+# Fix cosmic-term transparency issue by setting opacity to 1.0 (fully opaque)
+mkdir -p /etc/skel/.config/cosmic/com.system76.CosmicTerm/v1
+echo "1.0" > /etc/skel/.config/cosmic/com.system76.CosmicTerm/v1/opacity
+mkdir -p /home/sisyphus/.config/cosmic/com.system76.CosmicTerm/v1
+echo "1.0" > /home/sisyphus/.config/cosmic/com.system76.CosmicTerm/v1/opacity
+chown -R sisyphus:sisyphus /home/sisyphus/.config
 if command -v systemd-tmpfiles >/dev/null 2>&1; then
     systemd-tmpfiles --create /usr/lib/tmpfiles.d/cosmic-greeter.conf 2>/dev/null || true
 fi

@@ -182,6 +182,10 @@
         <package name="nvidia-persistenced" />
         <package name="iwlwifi-mvm-firmware" />
         <package name="iwlwifi-dvm-firmware" />
+        <package name="realtek-firmware" />
+        <package name="atheros-firmware" />
+        <package name="brcmfmac-firmware" />
+        <package name="mt7xxx-firmware" />
         <package name="wireless-regdb" />
         <package name="rfkill" />
         <package name="iw" />
