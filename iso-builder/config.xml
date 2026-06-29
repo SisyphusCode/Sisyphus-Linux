@@ -144,7 +144,6 @@
         <package name="cosmic-icon-theme" />
         <package name="cosmic-wallpapers" />
         <package name="pop-icon-theme" />
-        <package name="pop-fonts" />
         <package name="xdg-desktop-portal" />
         <package name="xdg-desktop-portal-cosmic" />
         <package name="xdg-desktop-portal-gtk" />
