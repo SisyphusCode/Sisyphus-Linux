@@ -3,7 +3,7 @@ name = "NetworkManager"
 # Rocky / CIQ GNOME desktop networking (Wi-Fi + wired).
 exec = "/usr/libexec/forge/start-networkmanager.sh"
 args = ["--no-daemon"]
-after = ["dbus", "udev"]
+after = ["dbus", "udev", "wpa_supplicant"]
 type = "dbus"
 bus-name = "org.freedesktop.NetworkManager"
 restart = "on-failure"

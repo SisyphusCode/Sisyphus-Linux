@@ -92,6 +92,35 @@ after = ["dbus"]
 restart = "on-failure"
 EOF
 
+    cat > "${ROOT}/etc/forge/units/58-wpa_supplicant.forge.toml" <<'EOF'
+[service]
+name = "wpa_supplicant"
+description = "WPA Supplicant daemon"
+exec = "/usr/sbin/wpa_supplicant"
+args = ["-c", "/etc/wpa_supplicant/wpa_supplicant.conf", "-u"]
+type = "dbus"
+bus-name = "fi.w1.wpa_supplicant1"
+after = ["dbus"]
+restart = "on-failure"
+EOF
+
+    cat > "${ROOT}/etc/forge/units/00-multi-user.target.forge.toml" <<'EOF'
+[target]
+name = "multi-user"
+requires = ["forge-early", "dbus", "polkit", "udev", "logind"]
+wants = [
+    "plymouth-kill",
+    "udev-trigger",
+    "udev-settle",
+    "NetworkManager",
+    "network-setup",
+    "wpa_supplicant",
+    "user-sessions",
+    "getty-console",
+]
+EOF
+
+
     rm -f "${ROOT}/etc/forge/units/01-dbus.socket.forge.toml"
 
     if [[ -f "${ROOT}/etc/forge/units/05-logind.forge.toml" ]] \
@@ -106,7 +135,7 @@ restore_forge_units
 
 if [[ -x "${ROOT}/usr/bin/forgectl" ]]; then
     for svc in dbus udev logind localed-stub polkit accounts-daemon network-setup \
-               network-manager user-sessions seatd cosmic-greeter-daemon display-manager; do
+               network-manager wpa_supplicant user-sessions seatd cosmic-greeter-daemon display-manager; do
         chroot "${ROOT}" forgectl enable "${svc}" 2>/dev/null || true
     done
 fi

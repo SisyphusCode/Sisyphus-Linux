@@ -5,9 +5,9 @@ wants = [
     "accounts-daemon",
     "relabel-watch",
     "display-manager",
-    "sisyphus-installer",
     "getty-tty3",
 ]
+
 
 # Desktop target. forge-desktop auto-logs in (no GDM). Emergency console: getty-tty3.
 #

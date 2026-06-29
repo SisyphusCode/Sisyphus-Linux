@@ -8,6 +8,7 @@ wants = [
     "udev-settle",
     "NetworkManager",
     "network-setup",
+    "wpa_supplicant",
     "user-sessions",
     "getty-console",
 ]

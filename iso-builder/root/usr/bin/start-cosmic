@@ -12,6 +12,8 @@ export XDG_SESSION_TYPE="${XDG_SESSION_TYPE:-wayland}"
 export LIBSEAT_BACKEND="${LIBSEAT_BACKEND:-seatd}"
 export SEATD_SOCK="${SEATD_SOCK:-/run/seatd.sock}"
 
+
+
 if [[ -r /run/cosmic-greeter/environment ]]; then
     while IFS='=' read -r key value; do
         [[ -n "$key" && "$key" != \#* ]] || continue
@@ -39,10 +41,29 @@ if command -v cosmic-session >/dev/null 2>&1; then
     exec cosmic-session "$@"
 fi
 
-for daemon in cosmic-settings-daemon cosmic-bg cosmic-panel cosmic-workspaces cosmic-notifications cosmic-osd cosmic-idle; do
-    if command -v "${daemon}" >/dev/null 2>&1; then
-        "${daemon}" >>"${log_dir}/${daemon}.log" 2>&1 &
+# Start a background helper to launch the COSMIC desktop services once Wayland is ready
+(
+    socket=""
+    for _ in $(seq 1 100); do
+        for s in "${XDG_RUNTIME_DIR}/wayland-"*; do
+            if [[ -S "$s" ]]; then
+                socket="$s"
+                break 2
+            fi
+        done
+        sleep 0.1
+    done
+
+    if [[ -n "$socket" ]]; then
+        export WAYLAND_DISPLAY="${socket##*/}"
+        for daemon in cosmic-settings-daemon cosmic-bg cosmic-panel cosmic-workspaces cosmic-notifications cosmic-osd cosmic-idle; do
+            if command -v "${daemon}" >/dev/null 2>&1; then
+                "${daemon}" >>"${log_dir}/${daemon}.log" 2>&1 &
+            fi
+        done
     fi
-done
+) &
 
 exec cosmic-comp
+
+

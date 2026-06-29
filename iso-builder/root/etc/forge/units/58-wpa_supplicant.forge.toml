@@ -1,0 +1,9 @@
+[service]
+name = "wpa_supplicant"
+description = "WPA Supplicant daemon"
+exec = "/usr/sbin/wpa_supplicant"
+args = ["-c", "/etc/wpa_supplicant/wpa_supplicant.conf", "-u", "-s", "-O", "/run/wpa_supplicant"]
+type = "dbus"
+bus-name = "fi.w1.wpa_supplicant1"
+after = ["dbus"]
+restart = "on-failure"

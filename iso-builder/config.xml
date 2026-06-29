@@ -1,11 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <image schemaversion="7.5" name="sisyphus-linux">
     <description type="system">
         <author>Sisyphus Linux</author>
         <contact>sisyphuscode@fedoraproject.org</contact>
         <specification>Sisyphus Linux — Forge init, COSMIC desktop, DNF package management</specification>
     </description>
-
+    <repository type="rpm-md" alias="copr-tuned-rs" priority="5" package_gpgcheck="false" repository_gpgcheck="false">
+        <source path="https://download.copr.fedorainfracloud.org/results/sisyphuscode/tuned-rs/fedora-44-x86_64/" />
+    </repository>
     <preferences>
         <version>0.1.0</version>
         <packagemanager>dnf5</packagemanager>
@@ -14,13 +16,8 @@
         <locale>en_US</locale>
         <keytable>us</keytable>
         <timezone>UTC</timezone>
-        <!-- Forge replaces PID 1; systemd stays installed for udev/NM/polkit libs -->
-        <type image="oem" filesystem="btrfs" firmware="uefi"
-              bootpartsize="1000"
-              kernelcmdline="init=/usr/sbin/forge-core selinux=0 quiet rd.lvm=0 rd.md=0 rd.dm=0"
-              overlayroot="true"
-              overlayroot_readonly_filesystem="squashfs">
-            <bootloader name="grub2"/>
+        <type image="iso" filesystem="btrfs" firmware="uefi" kernelcmdline="init=/usr/sbin/forge-core selinux=0 quiet rd.lvm=0 rd.md=0 rd.dm=0 nvidia-drm.modeset=1" flags="overlay">
+            <bootloader name="grub2" />
             <oemconfig>
                 <oem-resize>true</oem-resize>
                 <oem-swap>true</oem-swap>
@@ -28,187 +25,180 @@
             </oemconfig>
         </type>
     </preferences>
-
-    <!-- Fedora Rawhide (direct mirror — Kiwi dnf4 does not follow metalinks) -->
-    <repository type="rpm-md" alias="rawhide" package_gpgcheck="false" repository_gpgcheck="false">
-        <source path="https://dl.fedoraproject.org/pub/fedora/linux/development/rawhide/Everything/x86_64/os/"/>
+    <repository type="rpm-md" alias="fedora-44" package_gpgcheck="false" repository_gpgcheck="false">
+        <source path="https://dl.fedoraproject.org/pub/fedora/linux/releases/44/Everything/x86_64/os/" />
     </repository>
-
-    <!-- COPR: Forge init + tuned-rs (rawhide chroot — closest to F45 today) -->
     <repository type="rpm-md" alias="copr-the-forge" priority="5" package_gpgcheck="false" repository_gpgcheck="false">
-        <source path="https://download.copr.fedorainfracloud.org/results/sisyphuscode/the-forge/fedora-rawhide-x86_64/">
-            <signing key="https://download.copr.fedorainfracloud.org/results/sisyphuscode/the-forge/pubkey.gpg"/>
+        <source path="https://download.copr.fedorainfracloud.org/results/sisyphuscode/the-forge/fedora-44-x86_64/">
+            <signing key="https://download.copr.fedorainfracloud.org/results/sisyphuscode/the-forge/pubkey.gpg" />
         </source>
     </repository>
-    <repository type="rpm-md" alias="copr-tuned-rs" priority="5" package_gpgcheck="false" repository_gpgcheck="false">
-        <source path="https://download.copr.fedorainfracloud.org/results/sisyphuscode/tuned-rs/fedora-rawhide-x86_64/">
-            <signing key="https://download.copr.fedorainfracloud.org/results/sisyphuscode/tuned-rs/pubkey.gpg"/>
-        </source>
-    </repository>
-    
-    <!-- CachyOS kernel from bieszczaders COPR -->
     <repository type="rpm-md" alias="copr-kernel-cachyos" priority="5" package_gpgcheck="false" repository_gpgcheck="false">
-        <source path="https://download.copr.fedorainfracloud.org/results/bieszczaders/kernel-cachyos/fedora-rawhide-x86_64/">
-            <signing key="https://download.copr.fedorainfracloud.org/results/bieszczaders/kernel-cachyos/pubkey.gpg"/>
+        <source path="https://download.copr.fedorainfracloud.org/results/bieszczaders/kernel-cachyos/fedora-44-x86_64/">
+            <signing key="https://download.copr.fedorainfracloud.org/results/bieszczaders/kernel-cachyos/pubkey.gpg" />
         </source>
     </repository>
-
-    <!-- Bundled packages not yet in Rawhide (pop-sound-theme for cosmic-settings-daemon) -->
     <repository type="rpm-md" alias="sisyphus-local" priority="1" package_gpgcheck="false" repository_gpgcheck="false">
-        <source path="dir:///home/Sisyphus/sisyphus-linux/repos"/>
+        <source path="dir:///home/Sisyphus/sisyphus-linux/repos" />
     </repository>
-
-
-
     <packages type="bootstrap">
-        <package name="filesystem"/>
-        <package name="glibc"/>
-        <package name="glibc-langpack-en"/>
-        <package name="bash"/>
-        <package name="coreutils"/>
-        <package name="dnf5"/>
+        <package name="filesystem" />
+        <package name="glibc" />
+        <package name="glibc-langpack-en" />
+        <package name="bash" />
+        <package name="coreutils" />
+        <package name="dnf5" />
+        <package name="dnf5-plugins" />
     </packages>
-
     <packages type="image">
-        <!-- tuned-rs owns power profile D-Bus; block laptop stack conflicts -->
-        <ignore name="tlp"/>
-        <ignore name="tlp-rdw"/>
-
-        <!-- Boot stack -->
-        <package name="kernel-cachyos"/>
-        <package name="kernel-cachyos-modules"/>
-        <package name="dracut"/>
-        <package name="dracut-config-generic"/>
-        <package name="dracut-network"/>
-        <package name="dracut-kiwi-lib"/>
-        <package name="dracut-kiwi-oem-repart"/>
-        <package name="dracut-kiwi-overlay"/>
-        <package name="grub2"/>
-        <package name="grub2-efi-x64"/>
-        <package name="shim-x64"/>
-        <package name="efibootmgr"/>
-
-        <!-- Init + service manager (Forge is PID 1; systemd provides udev/tmpfiles) -->
-        <package name="the-forge"/>
-        <package name="tuned-rs"/>
-        <package name="systemd"/>
-        <package name="systemd-udev"/>
-        <package name="systemd-resolved"/>
-        <package name="dbus"/>
-        <package name="dbus-daemon"/>
-        <package name="dbus-broker"/>
-        <package name="dbus-tools"/>
-
-        <!-- Networking -->
-        <package name="NetworkManager"/>
-        <package name="NetworkManager-wifi"/>
-        <package name="NetworkManager-bluetooth"/>
-        <package name="wpa_supplicant"/>
-        <package name="bind-utils"/>
-        <package name="nbd"/>
-        <package name="iproute"/>
-        <package name="iptables-nft"/>
-
-        <!-- Session / policy -->
-        <package name="polkit"/>
-        <package name="systemd-pam"/>
-        <package name="accountsservice"/>
-        <package name="sudo"/>
-        <package name="util-linux"/>
-        <package name="util-linux-user"/>
-
-        <!-- Audio / input -->
-        <package name="pipewire"/>
-        <package name="pipewire-pulseaudio"/>
-        <package name="pipewire-alsa"/>
-        <package name="wireplumber"/>
-        <package name="alsa-lib"/>
-        <package name="alsa-ucm"/>
-        <package name="libinput"/>
-        <package name="libevdev"/>
-
-        <!-- Graphics -->
-        <package name="linux-firmware"/>
-        <package name="mesa-dri-drivers"/>
-        <package name="mesa-vulkan-drivers"/>
-        <package name="mesa-libGL"/>
-        <package name="mesa-libEGL"/>
-        <package name="libva"/>
-        <package name="vulkan-loader"/>
-
-        <!-- COSMIC desktop (greeter + shell; no settings/session — tuned-rs conflicts with ppd) -->
-        <package name="adw-gtk3-theme"/>
-        <package name="acpid"/>
-        <package name="cosmic-comp"/>
-        <package name="cosmic-greeter"/>
-        <package name="cosmic-randr"/>
-        <package name="cosmic-settings-daemon"/>
-        <package name="greetd"/>
-        <package name="libseat"/>
-        <package name="seatd"/>
-        <package name="python3-dbus"/>
-        <package name="fprintd-pam"/>
-        <package name="xdg-user-dirs"/>
-        <package name="open-sans-fonts"/>
-        <package name="google-noto-sans-mono-fonts"/>
-        <package name="xrdb"/>
-        <package name="cosmic-panel"/>
-        <package name="cosmic-bg"/>
-        <package name="cosmic-launcher"/>
-        <package name="cosmic-notifications"/>
-        <package name="cosmic-applets"/>
-        <package name="cosmic-workspaces"/>
-        <package name="cosmic-idle"/>
-        <package name="cosmic-osd"/>
-        <package name="cosmic-files"/>
-        <package name="cosmic-term"/>
-        <package name="cosmic-edit"/>
-        <package name="cosmic-store"/>
-        <package name="cosmic-icon-theme"/>
-        <package name="cosmic-wallpapers"/>
-        <package name="xdg-desktop-portal"/>
-        <package name="xdg-desktop-portal-cosmic"/>
-        <package name="xdg-desktop-portal-gtk"/>
-
-        <!-- Fonts + minimal apps -->
-        <package name="liberation-fonts"/>
-        <package name="google-noto-sans-vf-fonts"/>
-        <package name="adwaita-icon-theme"/>
-        <package name="flatpak"/>
-        <package name="gnome-keyring"/>
-
-        <!-- Package management -->
-        <package name="dnf-plugins-core"/>
-
-
-        <!-- Base utilities -->
-        <package name="vim-minimal"/>
-        <package name="less"/>
-        <package name="which"/>
-
-        <package name="gawk"/>
-        <package name="tar"/>
-        <package name="gzip"/>
-        <package name="xz"/>
-
-        <package name="wget"/>
-        <package name="openssh-clients"/>
-        <package name="openssh-server"/>
-        <package name="calamares"/>
-        <package name="qt5-qtwayland"/>
-        <package name="qt6-qtwayland"/>
-        <package name="chrony"/>
-        <package name="firewalld"/>
-        <package name="rsync"/>
-        <package name="htop"/>
-        <package name="pciutils"/>
-        <package name="usbutils"/>
-        <package name="lshw"/>
-        <package name="fwupd"/>
-        <package name="bluez"/>
+        <ignore name="tlp" />
+        <ignore name="tlp-rdw" />
+        <package name="kernel-cachyos" />
+        <package name="kernel-cachyos-modules" />
+        <package name="dracut" />
+        <package name="dracut-config-generic" />
+        <package name="dracut-network" />
+        <package name="dracut-kiwi-lib" />
+        <package name="dracut-kiwi-overlay" />
+        <package name="grub2" />
+        <package name="grub2-efi-x64" />
+        <package name="shim-x64" />
+        <package name="efibootmgr" />
+        <package name="the-forge" />
+        <package name="systemd" />
+        <package name="systemd-udev" />
+        <package name="systemd-resolved" />
+        <package name="dbus" />
+        <package name="dbus-daemon" />
+        <package name="dbus-broker" />
+        <package name="dbus-tools" />
+        <package name="NetworkManager" />
+        <package name="NetworkManager-wifi" />
+        <package name="NetworkManager-bluetooth" />
+        <package name="wpa_supplicant" />
+        <package name="bind-utils" />
+        <package name="nbd" />
+        <package name="iproute" />
+        <package name="iptables-nft" />
+        <package name="polkit" />
+        <package name="systemd-pam" />
+        <package name="accountsservice" />
+        <package name="sudo" />
+        <package name="util-linux" />
+        <package name="util-linux-user" />
+        <package name="pipewire" />
+        <package name="pipewire-pulseaudio" />
+        <package name="pipewire-alsa" />
+        <package name="wireplumber" />
+        <package name="alsa-lib" />
+        <package name="alsa-ucm" />
+        <package name="libinput" />
+        <package name="libevdev" />
+        <package name="linux-firmware" />
+        <package name="mesa-dri-drivers" />
+        <package name="mesa-vulkan-drivers" />
+        <package name="mesa-libGL" />
+        <package name="mesa-libEGL" />
+        <package name="libva" />
+        <package name="vulkan-loader" />
+        <package name="adw-gtk3-theme" />
+        <package name="acpid" />
+        <package name="cosmic-comp" />
+        <package name="cosmic-greeter" />
+        <package name="cosmic-randr" />
+        <package name="cosmic-settings-daemon" />
+        <package name="greetd" />
+        <package name="libseat" />
+        <package name="seatd" />
+        <package name="python3-dbus" />
+        <package name="fprintd-pam" />
+        <package name="xdg-user-dirs" />
+        <package name="open-sans-fonts" />
+        <package name="google-noto-sans-mono-fonts" />
+        <package name="fira-code-fonts" />
+        <package name="xrdb" />
+        <package name="cosmic-panel" />
+        <package name="cosmic-bg" />
+        <package name="cosmic-launcher" />
+        <package name="cosmic-notifications" />
+        <package name="cosmic-applets" />
+        <package name="cosmic-workspaces" />
+        <package name="cosmic-idle" />
+        <package name="cosmic-osd" />
+        <package name="cosmic-files" />
+        <package name="foot" />
+        <package name="xterm" />
+        <package name="gedit" />
+        <package name="cosmic-store" />
+        <package name="cosmic-icon-theme" />
+        <package name="cosmic-wallpapers" />
+        <package name="xdg-desktop-portal" />
+        <package name="xdg-desktop-portal-cosmic" />
+        <package name="xdg-desktop-portal-gtk" />
+        <package name="liberation-fonts" />
+        <package name="google-noto-sans-vf-fonts" />
+        <package name="adwaita-icon-theme" />
+        <package name="flatpak" />
+        <package name="gnome-keyring" />
+        <package name="firefox" />
+        <package name="gnome-terminal" />
+        <package name="xhost" />
+        <package name="dnf-plugins-core" />
+        <package name="vim-minimal" />
+        <package name="less" />
+        <package name="which" />
+        <package name="gawk" />
+        <package name="tar" />
+        <package name="gzip" />
+        <package name="xz" />
+        <package name="wget" />
+        <package name="openssh-clients" />
+        <package name="openssh-server" />
+        <package name="calamares" />
+        <package name="qt5-qtwayland" />
+        <package name="qt6-qtwayland" />
+        <package name="chrony" />
+        <package name="firewalld" />
+        <package name="rsync" />
+        <package name="htop" />
+        <package name="pciutils" />
+        <package name="usbutils" />
+        <package name="lshw" />
+        <package name="fwupd" />
+        <package name="bluez" />
+        <package name="kernel-devel" />
+        <package name="cosmic-settings" />
+        <package name="nvidia-open" />
+        <package name="nvidia-settings" />
+        <package name="nvidia-persistenced" />
+        <package name="iwlwifi-mvm-firmware" />
+        <package name="iwlwifi-dvm-firmware" />
+        <package name="wireless-regdb" />
+        <package name="rfkill" />
+        <package name="iw" />
+        <package name="crda" />
+        <package name="NetworkManager-tui" />
+        <package name="nm-connection-editor" />
+        <package name="network-manager-applet" />
+        <package name="dracut-kiwi-live" />
+        <package name="tuned-rs" />
     </packages>
-
     <users>
-        <user name="sisyphus" home="/home/sisyphus" groups="wheel,video,render,input" password="sisyphus" pwdformat="plain" shell="/bin/bash"/>
+        <user name="sisyphus" home="/home/sisyphus" groups="wheel,video,render,input" password="sisyphus" pwdformat="plain" shell="/bin/bash" />
     </users>
+    <repository type="rpm-md" alias="rpmfusion-free" package_gpgcheck="false" repository_gpgcheck="false">
+        <source path="https://download1.rpmfusion.org/free/fedora/releases/44/Everything/x86_64/os/" />
+    </repository>
+    <repository type="rpm-md" alias="rpmfusion-nonfree" package_gpgcheck="false" repository_gpgcheck="false">
+        <source path="https://download1.rpmfusion.org/nonfree/fedora/releases/44/Everything/x86_64/os/" />
+    </repository>
+    <repository type="rpm-md" alias="rpmfusion-free-updates" package_gpgcheck="false" repository_gpgcheck="false">
+        <source path="https://download1.rpmfusion.org/free/fedora/updates/44/x86_64/" />
+    </repository>
+    <repository type="rpm-md" alias="rpmfusion-nonfree-updates" package_gpgcheck="false" repository_gpgcheck="false">
+        <source path="https://download1.rpmfusion.org/nonfree/fedora/updates/44/x86_64/" />
+    </repository>
+    <repository type="rpm-md" alias="nvidia-cuda" package_gpgcheck="false" repository_gpgcheck="false">
+        <source path="https://developer.download.nvidia.com/compute/cuda/repos/fedora44/x86_64/" />
+    </repository>
 </image>

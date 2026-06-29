@@ -56,6 +56,7 @@ mkdir -p /var/lib/cosmic-greeter /run/cosmic-greeter
 chown cosmic-greeter:cosmic-greeter /var/lib/cosmic-greeter /run/cosmic-greeter
 chmod 0755 /var/lib/cosmic-greeter
 chmod 0755 /run/cosmic-greeter
+
 # Pre-create cosmic config skeleton for greeter to avoid cosmic-config permission issues at runtime
 for id in com.system76.CosmicComp com.system76.CosmicSettings.Shortcuts com.system76.CosmicSettings.WindowRules com.system76.CosmicTk; do
     mkdir -p "/var/lib/cosmic-greeter/.config/cosmic/${id}/v1"
@@ -80,6 +81,8 @@ chmod 0755 /usr/libexec/forge/desktop-ready.sh 2>/dev/null || true
 chmod 0755 /usr/libexec/forge/*.sh 2>/dev/null || true
 chmod 0755 /usr/libexec/sisyphus/*.sh 2>/dev/null || true
 chmod 0755 /usr/lib/systemd/system-generators/dracut-kiwi-generator 2>/dev/null || true
+chmod 0755 /usr/local/bin/sisyphus-pre-install.sh 2>/dev/null || true
+chmod 0755 /usr/local/bin/sisyphus-dm-setup.sh 2>/dev/null || true
 
 # Enable Calamares native installer on overlayroot live media (Kiwi OEM).
 mkdir -p /etc/sisyphus
@@ -102,11 +105,16 @@ systemctl mask getty-pre.target 2>/dev/null || \
 echo graphical > /etc/forge/default.target
 if command -v forgectl >/dev/null 2>&1; then
     for svc in dbus udev logind localed-stub polkit accounts-daemon network-setup \
-               network-manager user-sessions seatd cosmic-greeter-daemon display-manager \
-               sisyphus-installer; do
+               network-manager wpa_supplicant user-sessions seatd cosmic-greeter-daemon display-manager; do
         forgectl enable "$svc" 2>/dev/null || true
     done
 fi
+
+# Configure passwordless sudo for the live user sisyphus
+mkdir -p /etc/sudoers.d
+echo "sisyphus ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/90-sisyphus-live
+chmod 0440 /etc/sudoers.d/90-sisyphus-live
+
 
 # COPR GPG keys for on-image dnf upgrades
 if command -v rpm >/dev/null 2>&1; then
@@ -273,14 +281,57 @@ printf '%s\n' "$machine_id" > /var/lib/dbus/machine-id
 printf '%s\n' "$machine_id" > /etc/machine-id
 chmod 0644 /etc/machine-id /var/lib/dbus/machine-id
 
+# ── Calamares: Post-Install Display Manager Hook (The Forge) ──────
+echo "==> Configuring Calamares DM shellprocess for The Forge..."
 
-# Remove EFI fallback loader to prevent it from registering a new NVRAM boot entry
-# every time the USB boots (which causes the "blue screen asking to reset or continue" on Lenovo).
+# 1. Write the detection script (Executes INSIDE the installed OS chroot)
+cat > /usr/local/bin/sisyphus-dm-setup.sh << 'SCRIPT'
+#!/bin/bash
+# dontChroot: true — '/' is the newly installed system rootfs.
+
+if rpm -q plasma-workspace &>/dev/null; then
+    forgectl enable sddm
+    forgectl disable display-manager gdm 2>/dev/null || true
+elif rpm -q gnome-shell &>/dev/null; then
+    forgectl enable gdm
+    forgectl disable display-manager sddm 2>/dev/null || true
+else
+    # Fallback: Forge-native COSMIC display manager
+    forgectl enable display-manager
+    forgectl disable gdm sddm 2>/dev/null || true
+fi
+SCRIPT
+chmod +x /usr/local/bin/sisyphus-dm-setup.sh
+
+# 2. Configure the Calamares shellprocess module
+mkdir -p /usr/share/calamares/modules
+cat > /usr/share/calamares/modules/shellprocess-dm.conf << 'SHELLCONF'
+i18n:
+    name: "Configuring Display Manager for The Forge..."
+dontChroot: false
+timeout: 30
+script:
+    - command: "/usr/local/bin/sisyphus-dm-setup.sh"
+SHELLCONF
+
+# 3. Safely inject into settings.conf (Idempotent, dynamic anchor)
+SETTINGS="/usr/share/calamares/settings.conf"
+if [ -f "$SETTINGS" ] && ! grep -q 'shellprocess@dm' "$SETTINGS"; then
+    for anchor in '- packages' '- netinstall' '- finished'; do
+        if grep -q "$anchor" "$SETTINGS"; then
+            sed -i "/$anchor/a \  - shellprocess@dm" "$SETTINGS"
+            break
+        fi
+    done
+fi
+
+# 4. Remove EFI fallback loader unconditionally to prevent NVRAM boot manager clutter
 for fbx64 in /boot/efi/EFI/BOOT/fbx64.efi /boot/efi/EFI/fedora/fbx64.efi; do
     if [[ -f "$fbx64" ]]; then
         echo "==> Removing EFI fallback loader: $fbx64"
         rm -f "$fbx64"
     fi
 done
+
 
 echo "==> Sisyphus Linux configuration complete"
