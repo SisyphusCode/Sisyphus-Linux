@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 # systemd-udevd for PID 1 — initramfs may leave a stale instance; stop it first.
 set -euo pipefail
 
@@ -9,13 +9,9 @@ echo "Open FDs in start-udevd.sh:" >>"$WRAPPER_LOG"
 ls -l /proc/$$/fd >>"$WRAPPER_LOG" 2>&1 || true
 
 if [[ "$(ps -o comm= -p 1 2>/dev/null || true)" == "forge-core" ]]; then
-  if [[ ! -f /run/forge/udevd-stale-killed ]]; then
-    mkdir -p /run/forge
-    pkill -9 systemd-udevd 2>/dev/null || true
-    pkill -9 udevd 2>/dev/null || true
-    touch /run/forge/udevd-stale-killed
-    sleep 0.2
-  fi
+  pkill -9 systemd-udevd 2>/dev/null || true
+  pkill -9 udevd 2>/dev/null || true
+  sleep 0.2
 fi
 
 # Ensure LISTEN_PID is set to our current PID for systemd-style socket activation

@@ -88,6 +88,23 @@ chmod 0755 /usr/local/bin/sisyphus-dm-setup.sh 2>/dev/null || true
 mkdir -p /etc/sisyphus
 touch /etc/sisyphus/installer-enabled
 
+mkdir -p /home/sisyphus/Desktop
+cat > /home/sisyphus/Desktop/calamares.desktop << 'EOF'
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Install Sisyphus Linux
+Comment=Install the operating system to disk
+Exec=sudo -E calamares -d
+Icon=calamares
+Terminal=true
+Categories=Qt;System;
+EOF
+chmod +x /home/sisyphus/Desktop/calamares.desktop
+mkdir -p /usr/share/applications
+cp /home/sisyphus/Desktop/calamares.desktop /usr/share/applications/install-sisyphus.desktop
+chown -R sisyphus: /home/sisyphus/Desktop
+
 # Forge owns display-manager — disable stock greetd/cosmic-greeter systemd units.
 systemctl mask cosmic-greeter.service 2>/dev/null || \
     ln -sf /dev/null /etc/systemd/system/cosmic-greeter.service
@@ -252,6 +269,29 @@ after = ["dbus"]
 restart = "on-failure"
 EOF
 
+cat > /etc/forge/units/08-wpa-supplicant.forge.toml <<'EOF'
+[service]
+name = "wpa_supplicant"
+description = "WPA Supplicant daemon"
+exec = "/usr/sbin/wpa_supplicant"
+args = ["-u", "-s", "-O", "/run/wpa_supplicant"]
+type = "dbus"
+bus-name = "fi.w1.wpa_supplicant1"
+after = ["dbus", "udev"]
+restart = "on-failure"
+EOF
+
+cat > /etc/forge/units/07-network-manager.forge.toml <<'EOF'
+[service]
+name = "NetworkManager"
+exec = "/usr/libexec/forge/start-networkmanager.sh"
+args = ["--no-daemon"]
+after = ["dbus", "udev", "wpa_supplicant"]
+type = "dbus"
+bus-name = "org.freedesktop.NetworkManager"
+restart = "on-failure"
+EOF
+
 if ! grep -q 'systemd1-stub' /etc/forge/units/05-logind.forge.toml 2>/dev/null; then
     sed -i 's/after = \["forge-early", "dbus", "udev"\]/requires = ["systemd1-stub"]\nafter = ["forge-early", "dbus", "systemd1-stub", "udev"]/' \
         /etc/forge/units/05-logind.forge.toml 2>/dev/null || true
@@ -316,14 +356,37 @@ SHELLCONF
 
 # 3. Safely inject into settings.conf (Idempotent, dynamic anchor)
 SETTINGS="/usr/share/calamares/settings.conf"
-if [ -f "$SETTINGS" ] && ! grep -q 'shellprocess@dm' "$SETTINGS"; then
-    for anchor in '- packages' '- netinstall' '- finished'; do
-        if grep -q "$anchor" "$SETTINGS"; then
-            sed -i "/$anchor/a \  - shellprocess@dm" "$SETTINGS"
-            break
-        fi
-    done
+if [ -f "$SETTINGS" ]; then
+    # Disable default systemd services module
+    sed -i 's/- services-systemd/# - services-systemd/g' "$SETTINGS"
+    
+    if ! grep -q 'shellprocess@dm' "$SETTINGS"; then
+        for anchor in '- packages' '- netinstall' '- finished'; do
+            if grep -q "$anchor" "$SETTINGS"; then
+                sed -i "/$anchor/a \  - shellprocess@dm\n  - shellprocess@forge-services" "$SETTINGS"
+                break
+            fi
+        done
+    fi
 fi
+
+# Add a script for forgectl service enablement
+cat > /usr/local/bin/sisyphus-forge-services.sh << 'SCRIPT'
+#!/bin/bash
+# dontChroot: true
+echo "==> Enabling services via forgectl..."
+forgectl enable NetworkManager wpa_supplicant firewalld seatd polkit dbus logind localed-stub || true
+SCRIPT
+chmod +x /usr/local/bin/sisyphus-forge-services.sh
+
+cat > /usr/share/calamares/modules/shellprocess-forge-services.conf << 'SHELLCONF'
+i18n:
+    name: "Enabling Forge Services..."
+dontChroot: false
+timeout: 30
+script:
+    - command: "/usr/local/bin/sisyphus-forge-services.sh"
+SHELLCONF
 
 # 4. Remove EFI fallback loader unconditionally to prevent NVRAM boot manager clutter
 for fbx64 in /boot/efi/EFI/BOOT/fbx64.efi /boot/efi/EFI/fedora/fbx64.efi; do

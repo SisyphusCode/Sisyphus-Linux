@@ -1,30 +1,19 @@
 #!/usr/bin/env bash
-# Last gate before COSMIC greeter — graphics, SELinux labels, logind seat, systemd1 stub.
+# Last gate before GDM — graphics, SELinux labels, logind seat, systemd1 stub.
 set -euo pipefail
 
-LOG=/var/lib/forge/desktop-ready.log
-mkdir -p "$(dirname "$LOG")"
+LOG=/var/log/forge/desktop-ready.log
+mkdir -p /var/log/forge
 exec >>"$LOG" 2>&1
 echo "=== $(date -Is 2>/dev/null || date) desktop-ready start ==="
 
 BUS="${DBUS_SYSTEM_BUS_ADDRESS:-unix:path=/run/dbus/system_bus_socket}"
 
-dbus_name_owned() {
-    local name="$1"
-    if command -v busctl >/dev/null 2>&1; then
-        busctl --address="$BUS" call org.freedesktop.DBus /org/freedesktop/DBus \
-            org.freedesktop.DBus NameHasOwner s "$name" 2>/dev/null | grep -q 'true'
-        return $?
-    fi
-    dbus-send --address="$BUS" --dest=org.freedesktop.DBus --print-reply \
-        /org/freedesktop/DBus org.freedesktop.DBus.NameHasOwner "string:$name" 2>/dev/null \
-        | grep -q 'boolean true'
-}
-
 if [[ -x /usr/libexec/forge/forge-run-layout.sh ]]; then
   /usr/libexec/forge/forge-run-layout.sh || true
 fi
 
+# Initramfs Plymouth holds KMS/VT until killed — #1 cause of VT_ACTIVATE failure under forge.
 for sig in TERM TERM KILL; do
   pkill "-$sig" plymouthd 2>/dev/null || true
   pkill "-$sig" plymouth 2>/dev/null || true
@@ -39,14 +28,15 @@ for _ in $(seq 1 50); do
   sleep 0.1
 done
 
-for _ in $(seq 1 50); do
-  dbus_name_owned org.freedesktop.systemd1 && break
+for _ in $(seq 1 150); do
+  busctl --address="$BUS" status org.freedesktop.systemd1 >/dev/null 2>&1 && break
   sleep 0.1
 done
 
+# Ensure a seat0 exists with graphical capability so GDM / logind waits pass in clone and early boot.
 mkdir -p /run/systemd/seats
 if [[ ! -f /run/systemd/seats/seat0 ]]; then
-  cat >/run/systemd/seats/seat0 <<'SEAT'
+  cat > /run/systemd/seats/seat0 <<'SEAT'
 # Minimal seat for forge boot (logind will overwrite/enrich when ready)
 IS_SEAT0=1
 CAN_MULTI_SESSION=1
@@ -68,12 +58,12 @@ for _ in $(seq 1 100); do
 done
 
 for _ in $(seq 1 60); do
-  [[ -c /dev/dri/card0 ]] || [[ -c /dev/dri/card1 ]] || [[ -c /dev/dri/card2 ]] && break
+  [[ -c /dev/dri/card0 ]] || [[ -c /dev/dri/card1 ]] && break
   sleep 0.1
 done
 
-if [[ -x /usr/libexec/forge/cosmic-greeter-setup.sh ]]; then
-  /usr/libexec/forge/cosmic-greeter-setup.sh || true
+if [[ -x /usr/libexec/forge/gdm-greeter-setup.sh ]]; then
+  /usr/libexec/forge/gdm-greeter-setup.sh || true
 elif [[ -x /usr/libexec/forge/release-graphics.sh ]]; then
   /usr/libexec/forge/release-graphics.sh || true
 fi

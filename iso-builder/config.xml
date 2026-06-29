@@ -8,6 +8,11 @@
     <repository type="rpm-md" alias="copr-tuned-rs" priority="5" package_gpgcheck="false" repository_gpgcheck="false">
         <source path="https://download.copr.fedorainfracloud.org/results/sisyphuscode/tuned-rs/fedora-44-x86_64/" />
     </repository>
+    <repository type="rpm-md" alias="copr-sisyphus-linux" priority="5" package_gpgcheck="false" repository_gpgcheck="false">
+        <source path="https://download.copr.fedorainfracloud.org/results/sisyphuscode/sisyphus-linux/fedora-44-x86_64/">
+            <signing key="https://download.copr.fedorainfracloud.org/results/sisyphuscode/sisyphus-linux/pubkey.gpg" />
+        </source>
+    </repository>
     <preferences>
         <version>0.1.0</version>
         <packagemanager>dnf5</packagemanager>
@@ -39,7 +44,7 @@
         </source>
     </repository>
     <repository type="rpm-md" alias="sisyphus-local" priority="1" package_gpgcheck="false" repository_gpgcheck="false">
-        <source path="dir:///home/Sisyphus/sisyphus-linux/repos" />
+        <source path="dir:///home/Sisyphus/Sisyphus-Linux/repos" />
     </repository>
     <packages type="bootstrap">
         <package name="filesystem" />
@@ -75,6 +80,8 @@
         <package name="NetworkManager" />
         <package name="NetworkManager-wifi" />
         <package name="NetworkManager-bluetooth" />
+        <package name="NetworkManager-wwan" />
+        <package name="ModemManager" />
         <package name="wpa_supplicant" />
         <package name="bind-utils" />
         <package name="nbd" />
@@ -129,6 +136,7 @@
         <package name="foot" />
         <package name="xterm" />
         <package name="gedit" />
+        <package name="cosmic-term" />
         <package name="cosmic-store" />
         <package name="cosmic-icon-theme" />
         <package name="cosmic-wallpapers" />
@@ -155,6 +163,7 @@
         <package name="openssh-clients" />
         <package name="openssh-server" />
         <package name="calamares" />
+        <package name="sisyphus-installer-config" />
         <package name="qt5-qtwayland" />
         <package name="qt6-qtwayland" />
         <package name="chrony" />
