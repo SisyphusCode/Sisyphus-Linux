@@ -82,6 +82,9 @@
         <package name="NetworkManager-bluetooth" />
         <package name="NetworkManager-wwan" />
         <package name="ModemManager" />
+        <package name="ModemManager-glib" />
+        <package name="libmbim" />
+        <package name="libqmi" />
         <package name="wpa_supplicant" />
         <package name="bind-utils" />
         <package name="nbd" />
@@ -140,6 +143,8 @@
         <package name="cosmic-store" />
         <package name="cosmic-icon-theme" />
         <package name="cosmic-wallpapers" />
+        <package name="pop-icon-theme" />
+        <package name="pop-fonts" />
         <package name="xdg-desktop-portal" />
         <package name="xdg-desktop-portal-cosmic" />
         <package name="xdg-desktop-portal-gtk" />
@@ -182,6 +187,11 @@
         <package name="nvidia-persistenced" />
         <package name="iwlwifi-mvm-firmware" />
         <package name="iwlwifi-dvm-firmware" />
+        <package name="iwl7260-firmware" />
+        <package name="iwl3160-firmware" />
+        <package name="iwl5000-firmware" />
+        <package name="iwl6000-firmware" />
+        <package name="iwl6050-firmware" />
         <package name="realtek-firmware" />
         <package name="atheros-firmware" />
         <package name="brcmfmac-firmware" />
