@@ -186,11 +186,6 @@
         <package name="nvidia-persistenced" />
         <package name="iwlwifi-mvm-firmware" />
         <package name="iwlwifi-dvm-firmware" />
-        <package name="iwl7260-firmware" />
-        <package name="iwl3160-firmware" />
-        <package name="iwl5000-firmware" />
-        <package name="iwl6000-firmware" />
-        <package name="iwl6050-firmware" />
         <package name="realtek-firmware" />
         <package name="atheros-firmware" />
         <package name="brcmfmac-firmware" />
