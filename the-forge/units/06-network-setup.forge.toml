@@ -8,6 +8,3 @@ after = ["dbus", "udev", "udev-settle", "NetworkManager"]
 # Exits immediately; Wi-Fi continues in background (see setup-net.sh).
 type = "oneshot"
 restart = "no"
-
-[service.environment]
-FORGE_NET_IFACE = "wlp82s0"

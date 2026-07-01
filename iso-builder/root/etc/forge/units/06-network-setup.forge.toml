@@ -1,6 +1,7 @@
+[service]
 name = "network-setup"
 description = "Network interface setup via NetworkManager"
-command = "/usr/libexec/forge/setup-net.sh"
+exec = "/usr/libexec/forge/setup-net.sh"
 args = []
 after = ["dbus", "udev", "udev-settle", "NetworkManager"]
 type = "oneshot"

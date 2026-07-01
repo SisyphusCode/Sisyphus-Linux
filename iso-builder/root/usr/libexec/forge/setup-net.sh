@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# CIQ RLC Pro / Rocky GNOME network bring-up for The Forge.
-# Wi-Fi interfaces appear late; this script exits immediately and continues in the background.
+# Network bring-up for The Forge. Interfaces may appear late, so this script
+# exits immediately and continues probing in the background.
 set -uo pipefail
 
 IFACE="${FORGE_NET_IFACE:-}"
@@ -18,26 +18,41 @@ ip_bin() {
 
 IP="$(ip_bin)"
 
-detect_wifi_iface() {
+detect_primary_iface() {
   if [[ -n "$IFACE" ]] && "$IP" link show "$IFACE" &>/dev/null; then
     echo "$IFACE"
     return 0
   fi
   if command -v nmcli >/dev/null 2>&1; then
     local dev
-    dev="$(nmcli -t -f DEVICE,TYPE device 2>/dev/null | awk -F: '$2 == "wifi" { print $1; exit }')"
+    dev="$(nmcli -t -f DEVICE,TYPE,STATE device 2>/dev/null | awk -F: '
+      $1 != "lo" && $3 == "connected" && connected == "" { connected = $1 }
+      $1 != "lo" && $2 == "ethernet" && ethernet == "" { ethernet = $1 }
+      $1 != "lo" && $2 == "wifi" && wifi == "" { wifi = $1 }
+      $1 != "lo" && first == "" { first = $1 }
+      END {
+        if (connected != "") print connected;
+        else if (ethernet != "") print ethernet;
+        else if (wifi != "") print wifi;
+        else if (first != "") print first;
+      }')"
     if [[ -n "$dev" ]]; then
       echo "$dev"
       return 0
     fi
   fi
   local guessed
-  guessed="$("$IP" -o link show 2>/dev/null | awk -F': ' '/: wl/ { gsub("@.*","",$2); print $2; exit }')"
+  guessed="$("$IP" -o link show 2>/dev/null | awk -F': ' '
+    $2 !~ /^lo(@|$)/ {
+      gsub("@.*", "", $2);
+      print $2;
+      exit
+    }')"
   if [[ -n "$guessed" ]]; then
     echo "$guessed"
     return 0
   fi
-  echo "${IFACE:-wlp82s0}"
+  return 1
 }
 
 load_wifi_modules() {
@@ -49,6 +64,9 @@ load_wifi_modules() {
 wait_for_iface() {
   local i
   for ((i = 1; i <= TIMEOUT; i++)); do
+    if [[ -z "$IFACE" ]]; then
+      IFACE="$(detect_primary_iface || true)"
+    fi
     if "$IP" link show "$IFACE" &>/dev/null; then
       log "interface '$IFACE' appeared after ${i}s"
       return 0
@@ -141,10 +159,11 @@ bring_up_dhcp() {
 background_worker() {
   mkdir -p "$(dirname "$LOG")"
   : >"$LOG"
-  IFACE="$(detect_wifi_iface)"
-  log "background worker started (iface=$IFACE)"
-
   load_wifi_modules
+
+  IFACE="$(detect_primary_iface || true)"
+  log "background worker started (iface=${IFACE:-auto})"
+
   wait_for_iface || exit 0
   "$IP" link set "$IFACE" up 2>/dev/null || true
   wait_for_network_manager || true

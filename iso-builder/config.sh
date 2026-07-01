@@ -108,7 +108,7 @@ Type=Application
 Version=1.0
 Name=Install Sisyphus Linux
 Comment=Install the operating system to disk
-Exec=sudo -E calamares -d
+Exec=/usr/libexec/sisyphus/launch-calamares.sh
 Icon=calamares
 Terminal=true
 Categories=Qt;System;
@@ -135,7 +135,7 @@ systemctl mask getty-pre.target 2>/dev/null || \
 echo graphical > /etc/forge/default.target
 if command -v forgectl >/dev/null 2>&1; then
     for svc in dbus udev logind localed-stub polkit accounts-daemon network-setup \
-               network-manager wpa_supplicant user-sessions seatd cosmic-greeter-daemon display-manager; do
+               NetworkManager wpa_supplicant user-sessions seatd cosmic-greeter-daemon display-manager; do
         forgectl enable "$svc" 2>/dev/null || true
     done
 fi
@@ -292,6 +292,17 @@ type = "dbus"
 bus-name = "fi.w1.wpa_supplicant1"
 after = ["dbus", "udev"]
 restart = "on-failure"
+EOF
+
+cat > /etc/forge/units/06-network-setup.forge.toml <<'EOF'
+[service]
+name = "network-setup"
+description = "Network interface setup via NetworkManager"
+exec = "/usr/libexec/forge/setup-net.sh"
+args = []
+after = ["dbus", "udev", "udev-settle", "NetworkManager"]
+type = "oneshot"
+restart = "no"
 EOF
 
 cat > /etc/forge/units/07-network-manager.forge.toml <<'EOF'

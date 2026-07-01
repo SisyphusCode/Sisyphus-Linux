@@ -37,7 +37,7 @@ if [[ ! -S "${runtime}/bus" ]] && command -v dbus-daemon >/dev/null 2>&1; then
     dbus-daemon --session --address="unix:path=${runtime}/bus" --nopidfile --fork >/dev/null 2>&1 || true
 fi
 
-if command -v cosmic-session >/dev/null 2>&1; then
+if [[ "${SISYPHUS_USE_COSMIC_SESSION:-0}" == "1" ]] && command -v cosmic-session >/dev/null 2>&1; then
     exec cosmic-session "$@"
 fi
 
@@ -65,5 +65,4 @@ fi
 ) &
 
 exec cosmic-comp
-
 

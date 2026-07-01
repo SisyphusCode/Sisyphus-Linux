@@ -31,6 +31,17 @@ after = ["dbus"]
 restart = "on-failure"
 EOF
 
+    cat > "${ROOT}/etc/forge/units/06-network-setup.forge.toml" <<'EOF'
+[service]
+name = "network-setup"
+description = "Network interface setup via NetworkManager"
+exec = "/usr/libexec/forge/setup-net.sh"
+args = []
+after = ["dbus", "udev", "udev-settle", "NetworkManager"]
+type = "oneshot"
+restart = "no"
+EOF
+
     cat > "${ROOT}/etc/forge/units/60-display-manager.forge.toml" <<'EOF'
 [service]
 name = "display-manager"
@@ -135,38 +146,40 @@ restore_forge_units
 
 if [[ -x "${ROOT}/usr/bin/forgectl" ]]; then
     for svc in dbus udev logind localed-stub polkit accounts-daemon network-setup \
-               network-manager wpa_supplicant user-sessions seatd cosmic-greeter-daemon display-manager; do
+               NetworkManager wpa_supplicant user-sessions seatd cosmic-greeter-daemon display-manager; do
         chroot "${ROOT}" forgectl enable "${svc}" 2>/dev/null || true
     done
 fi
 
-if ! getent group -R "${ROOT}" seat >/dev/null 2>&1; then
+if ! chroot "${ROOT}" getent group seat >/dev/null 2>&1; then
     chroot "${ROOT}" groupadd -r seat 2>/dev/null || true
 fi
 
-if ! getent passwd -R "${ROOT}" cosmic-greeter >/dev/null 2>&1; then
+if ! chroot "${ROOT}" getent passwd cosmic-greeter >/dev/null 2>&1; then
     chroot "${ROOT}" useradd -r -d /var/lib/cosmic-greeter -s /sbin/nologin \
         -c "Cosmic Greeter Account" cosmic-greeter 2>/dev/null || true
 fi
 
-if getent group -R "${ROOT}" video >/dev/null 2>&1; then
+if chroot "${ROOT}" getent group video >/dev/null 2>&1; then
     chroot "${ROOT}" usermod -aG video cosmic-greeter 2>/dev/null || true
 fi
 for grp in render input seat; do
-    if getent group -R "${ROOT}" "${grp}" >/dev/null 2>&1; then
+    if chroot "${ROOT}" getent group "${grp}" >/dev/null 2>&1; then
         chroot "${ROOT}" usermod -aG "${grp}" cosmic-greeter 2>/dev/null || true
     fi
 done
 
 mkdir -p "${ROOT}/var/lib/cosmic-greeter" "${ROOT}/run/cosmic-greeter"
 cg_uid="$(chroot "${ROOT}" id -u cosmic-greeter 2>/dev/null || echo "")"
-if [[ -n "${cg_uid}" ]]; then
-    chown "${cg_uid}:${cg_uid}" "${ROOT}/var/lib/cosmic-greeter" 2>/dev/null || true
+cg_gid="$(chroot "${ROOT}" id -g cosmic-greeter 2>/dev/null || echo "")"
+if [[ -n "${cg_uid}" && -n "${cg_gid}" ]]; then
+    chown "${cg_uid}:${cg_gid}" "${ROOT}/var/lib/cosmic-greeter" "${ROOT}/run/cosmic-greeter" 2>/dev/null || true
     for id in com.system76.CosmicComp com.system76.CosmicSettings.Shortcuts com.system76.CosmicSettings.WindowRules com.system76.CosmicTk; do
         mkdir -p "${ROOT}/var/lib/cosmic-greeter/.config/cosmic/${id}/v1"
     done
-    chown -R "${cg_uid}:${cg_uid}" "${ROOT}/var/lib/cosmic-greeter"
+    chown -R "${cg_uid}:${cg_gid}" "${ROOT}/var/lib/cosmic-greeter"
     chmod 0755 "${ROOT}/var/lib/cosmic-greeter"
+    chmod 0755 "${ROOT}/run/cosmic-greeter"
 fi
 
 if [[ -f "${ROOT}/etc/default/grub" ]] \
