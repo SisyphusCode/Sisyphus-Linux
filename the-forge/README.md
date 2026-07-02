@@ -158,7 +158,7 @@ See also the new production units under `forge-core/examples/units/` (dbus, udev
 
 The sandbox will show restarts for daemons (normal — they expect real PID 1 + kernel). On a real boot they stay up.
 
-### Most realistic test: bootc OCI container (CIQ RLC Pro AI official images)
+### Most realistic test: bootc OCI container (CIQ RLC Pro official images)
 CIQ ships RLC as bootc container images. This gives you the *exact* shipped userspace (packages, GDM, mutter, NetworkManager, NVIDIA bits, Plymouth, etc.) without building a custom initramfs.
 
 ```bash
@@ -171,7 +171,7 @@ DEBUG=1 TIMEOUT=60s ./scripts/run-bootc-test.sh
 
 The script:
 * Builds release `forge-core`
-* Runs the bootc image (`depot.ciq.com/.../rlc-bootc:pro-ai-9` by default) 
+* Runs the bootc image (`depot.ciq.com/.../rlc-bootc:pro-9` by default) 
 * Overrides `/sbin/init` + injects your current `/etc/forge` + `/usr/libexec/forge` scripts via bind mounts
 * Uses `--privileged` + realistic volumes so udev, cgroups, dbus, logind etc. behave like a real system
 

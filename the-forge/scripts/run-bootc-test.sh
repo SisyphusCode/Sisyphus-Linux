@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the official CIQ RLC Pro AI bootc OCI image with Forge as PID 1.
+# Run the official CIQ RLC Pro bootc OCI image with Forge as PID 1.
 # This is the "most realistic" clone: full shipped userspace, packages,
 # bootc layout, exact GDM/NVIDIA/WiFi bits, etc.
 #
@@ -18,7 +18,7 @@
 # Output (waves, logs, errors) goes to stdout + /tmp/forge-bootc-$$.log
 #
 # Inside the container you get a near-identical environment to a real
-# bootc-installed RLC Pro AI system.
+# bootc-installed RLC Pro system.
 #
 # Container safety notes:
 # - No host /sys /proc /dev rw mounts (podman gives the container its own)
@@ -29,7 +29,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-IMAGE="${IMAGE:-depot.ciq.com/rlc-ai-9/rlc-9-ai-oci-images/rlc-bootc:pro-ai-9}"
+IMAGE="${IMAGE:-depot.ciq.com/rlc-9/rlc-9-oci-images/rlc-bootc:pro-9}"
 TIMEOUT="${TIMEOUT:-45s}"
 LOG="/tmp/forge-bootc-$$.log"
 
@@ -181,4 +181,4 @@ fi
 echo "✅ Bootc container test passed."
 echo
 echo "Iterate by changing /etc/forge units or packaging/ciq/*.sh then re-running."
-echo "The container sees the *exact* RLC Pro AI package set + your current config."
+echo "The container sees the *exact* RLC Pro package set + your current config."

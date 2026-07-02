@@ -5,8 +5,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 KERNEL="${KERNEL:-$(ls -1 /boot/vmlinuz-* 2>/dev/null | sort -V | tail -1 || true)}"
 
-# FULL=1 or CLONE=full  => use dracut-based full CIQ RLC Pro AI clone (exact packages + root FS snapshot)
-#   This is the "full CIQ RLC Pro AI system clone for QEMU" requested.
+# FULL=1 or CLONE=full  => use dracut-based full CIQ RLC Pro clone (exact packages + root FS snapshot)
+#   This is the "full CIQ RLC Pro system clone for QEMU" requested.
 #   It uses the host's dracut logic + injects current forge + /etc/forge + scripts,
 #   then presents the real root (via safe snapshot) to forge-core.
 # Otherwise (default): use the smaller synthetic forge-initramfs.cpio.gz (quick early-boot tests)

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build a *full* CIQ RLC Pro AI system clone initrd for QEMU using the host's dracut
+# Build a *full* CIQ RLC Pro system clone initrd for QEMU using the host's dracut
 # configuration + injected forge-core as the target init + current /etc/forge + scripts.
 #
 # This gives an almost byte-for-byte environment match for the real root filesystem
